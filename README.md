@@ -35,9 +35,9 @@ instant a brief arrives, and measures reuse going up.
 
 ## Stack
 
-- **Next.js (App Router) + TypeScript** — one repo, one control surface, API routes.
+- **Next.js (App Router) + TypeScript**, deployed on **Vercel** — one repo, one control surface, API routes.
 - **Anthropic Claude** agent (tool-calling) for retrieval-explanation + drafting.
-- **SQLite** append-only event store + template library (no external accounts to run).
+- **Append-only event store** behind one interface — in-memory + seed for demo/local (no accounts to run), swappable to **Neon / Vercel Postgres** for persistence.
 - **Explainable retrieval** over a seeded library that **learns from accept/reject**.
 
 All data in this repo is synthetic.

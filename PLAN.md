@@ -33,13 +33,19 @@ Next.js App Router (one control surface at /)
 ├─ app/api/triggers      breach → trigger record (+ optional Slack/email webhook)
 ├─ lib/agent             Claude tool-calling: retrieve_templates, draft_poc_plan
 ├─ lib/retrieval         explainable scoring over the library (+ learned weights)
-├─ lib/events            append-only event store (SQLite); everything derives from it
+├─ lib/events            append-only event store behind one interface; everything derives from it
 └─ data/seed             solution templates (multi-region) + briefs — all synthetic
 ```
 
 **Event-sourced by design.** Health, reuse rate, and rankings are *computed* from
 the event log, never entered — so "health is computed, not reported" holds by
 construction.
+
+**Deploys on Vercel.** The event store sits behind one interface with two
+implementations: an in-memory + seed store (default — runs anywhere with no
+setup, persists across requests while the serverless instance is warm) and a
+**Neon / Vercel Postgres** store for durable persistence (one env var, no app
+rewrite). Serverless filesystems are ephemeral, so no local SQLite file.
 
 **Retrieval that reasons.** The library is small, so retrieval is transparent
 structured scoring — segment, regulator, capability and integration overlap,
@@ -73,8 +79,11 @@ ranking improves over time.
   promise made to a customer about scope and feasibility — stays with the Solution
   Architect, not the agent.
 
-## Open decisions
+## Decisions
 
-1. Stack: Next.js + TS + SQLite + Claude as above — or Python (FastAPI) / another model?
-2. Trigger delivery: log-only vs a real Slack/email webhook.
-3. Retrieval: transparent scoring only, or add vector similarity.
+1. **Stack:** Next.js + TypeScript + Claude, deployed on Vercel. Event store
+   in-memory now, Neon / Vercel Postgres for persistence.
+2. **Trigger delivery:** in-app trigger log (breach record with the draft
+   attached, shown on the control surface).
+3. **Retrieval:** explainable structured scoring with a written reason per match;
+   ranking learns from accept/reject.
