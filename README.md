@@ -211,6 +211,13 @@ exec cockpits, onboarding journeys) is planned as **45 open issues across
 [#13](https://github.com/anupsahoo/revenueos/issues/13) reopened in M0 because
 only a skeleton exists and closed should mean done.
 
+Every open ticket carries acceptance criteria, the files it would touch, what it
+depends on and a size. They are written to be argued with before anyone builds
+them — not as titles with a sentence underneath. Ten
+[epics](https://github.com/anupsahoo/revenueos/issues?q=is%3Aissue+is%3Aopen+label%3Aepic)
+group them, each with its children as a checklist and a "done when" that is
+testable.
+
 See [`PRODUCT.md`](PRODUCT.md) for the pictorial product plan: personas and
 tenancy, onboarding journeys, vertical packs, the multi-tenant architecture and
 the two director cockpits.

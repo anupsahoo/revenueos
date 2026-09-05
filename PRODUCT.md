@@ -29,6 +29,8 @@ to build is in [`docs/CUT-LIST.md`](docs/CUT-LIST.md).
 
 ## 1. Who uses it — tenancy & personas
 
+> Built by [EPIC #20 · Multi-tenancy & identity](https://github.com/anupsahoo/revenueos/issues/20) — tickets [#30](https://github.com/anupsahoo/revenueos/issues/30) tenant model, [#31](https://github.com/anupsahoo/revenueos/issues/31) RBAC matrix, [#32](https://github.com/anupsahoo/revenueos/issues/32) SSO/SCIM, [#33](https://github.com/anupsahoo/revenueos/issues/33) isolation guards.
+
 ```mermaid
 flowchart TD
   P["🏛️ RevenueOS Platform<br/>(Platform Super Admin)"]
@@ -71,6 +73,8 @@ vertical, and a role.
 
 ## 2. How a company is onboarded (the journey)
 
+> Built by [EPIC #21 · Onboarding suite](https://github.com/anupsahoo/revenueos/issues/21) — [#34](https://github.com/anupsahoo/revenueos/issues/34) is this wizard, [#38](https://github.com/anupsahoo/revenueos/issues/38) the status tracker.
+
 ```mermaid
 flowchart LR
   A["Provision tenant"] --> B["Set org structure<br/>verticals + teams"]
@@ -87,6 +91,8 @@ Owner + status is tracked at every step (a pictorial progress map, not a form).
 
 ## 3. How a system is onboarded
 
+> Built by [EPIC #27 · Data & integrations](https://github.com/anupsahoo/revenueos/issues/27) — [#56](https://github.com/anupsahoo/revenueos/issues/56) connector framework, [#57](https://github.com/anupsahoo/revenueos/issues/57) the first real CRM webhook, [#58](https://github.com/anupsahoo/revenueos/issues/58) call intelligence.
+
 ```mermaid
 flowchart LR
   S1["Pick source<br/>HubSpot / Salesforce / Gong"] --> S2["Authenticate<br/>OAuth / API key"]
@@ -95,6 +101,8 @@ flowchart LR
 ```
 
 ## 4. How a user is onboarded (RBAC)
+
+> Built by [#36](https://github.com/anupsahoo/revenueos/issues/36) invite and role assignment, on [#32](https://github.com/anupsahoo/revenueos/issues/32) SSO/SCIM and [#31](https://github.com/anupsahoo/revenueos/issues/31) the permissions matrix.
 
 ```mermaid
 sequenceDiagram
@@ -113,6 +121,8 @@ sequenceDiagram
 ---
 
 ## 5. Verticals are configurable "packs"
+
+> Built by [EPIC #22 · Vertical packs](https://github.com/anupsahoo/revenueos/issues/22) — [#39](https://github.com/anupsahoo/revenueos/issues/39) is the schema, [#40](https://github.com/anupsahoo/revenueos/issues/40)/[#41](https://github.com/anupsahoo/revenueos/issues/41)/[#42](https://github.com/anupsahoo/revenueos/issues/42) the three packs, [#43](https://github.com/anupsahoo/revenueos/issues/43) the authoring screen.
 
 ```mermaid
 flowchart TD
@@ -138,6 +148,8 @@ behaviour** — no code change. That is how retail today / banking tomorrow work
 ---
 
 ## 6. Platform architecture (multi-tenant)
+
+> Built by [EPIC #26 · Scale & event store](https://github.com/anupsahoo/revenueos/issues/26) and [EPIC #25 · Agent platform](https://github.com/anupsahoo/revenueos/issues/25). [#53](https://github.com/anupsahoo/revenueos/issues/53), the durable per-tenant store, is the first ticket after M0 — see `docs/ROADMAP.md`.
 
 ```mermaid
 flowchart TB
@@ -165,6 +177,8 @@ the per-tenant event log**, never typed in.
 
 ## 7. The two director cockpits (why they buy it)
 
+> Built by [EPIC #23 · Executive cockpits](https://github.com/anupsahoo/revenueos/issues/23) — [#44](https://github.com/anupsahoo/revenueos/issues/44) sales, [#45](https://github.com/anupsahoo/revenueos/issues/45) pre-sales, [#46](https://github.com/anupsahoo/revenueos/issues/46) the shared drilldown.
+
 ```mermaid
 mindmap
   root(("Directors reduce their burden"))
@@ -188,7 +202,25 @@ brief. The operator loop (today's prototype) is one role's view inside this.
 
 ## Build order (milestones)
 
-`M0` shipped prototype → `M1` multi-tenant foundation → `M2` onboarding suite →
-`M3` vertical packs → `M4` cockpits + operator v2 → `M5` agent platform & scale →
-`M6` pictorial design system & governance. Details in the
-[epics](https://github.com/anupsahoo/revenueos/issues?q=is%3Aissue+label%3Aepic).
+Every ticket below has acceptance criteria, the files it would touch, what it
+depends on and a size. None of them is a placeholder, and none of them is built.
+
+| Milestone | What it delivers | Epics | Open | Status |
+|---|---|---|---|---|
+| **M0 · Prototype** | The Sales → PreSales loop on an event log | — | 1 | **shipped**, 18 closed |
+| **M1 · Multi-tenant foundation** | Tenancy, RBAC, SSO, isolation | [#20](https://github.com/anupsahoo/revenueos/issues/20) | 5 | planned |
+| **M2 · Onboarding suite** | Company, vertical, user, project journeys + real sources | [#21](https://github.com/anupsahoo/revenueos/issues/21), [#27](https://github.com/anupsahoo/revenueos/issues/27) | 10 | planned |
+| **M3 · Vertical packs** | Retail, banking, healthcare as configuration | [#22](https://github.com/anupsahoo/revenueos/issues/22) | 6 | planned |
+| **M4 · Executive cockpits** | Two director cockpits + operator v2 | [#23](https://github.com/anupsahoo/revenueos/issues/23), [#24](https://github.com/anupsahoo/revenueos/issues/24) | 7 | planned |
+| **M5 · Agent platform & scale** | Per-vertical agents, eval, durable store, workers | [#25](https://github.com/anupsahoo/revenueos/issues/25), [#26](https://github.com/anupsahoo/revenueos/issues/26) | 9 | planned |
+| **M6 · Design system & governance** | Component library, audit, residency, posture | [#28](https://github.com/anupsahoo/revenueos/issues/28), [#29](https://github.com/anupsahoo/revenueos/issues/29) | 8 | planned |
+
+**46 open, 18 closed.** The one open M0 ticket is
+[#13](https://github.com/anupsahoo/revenueos/issues/13), reopened because only a skeleton exists and closed should mean
+done.
+
+The milestone order is not the build order. [#53](https://github.com/anupsahoo/revenueos/issues/53) — the durable event
+store — sits in M5 and is the first thing I would build after M0, because
+everything on screen derives from the log and the log surviving a restart is the
+difference between a demo and a product. That argument, the twelve-week sequence
+and the four-week cut are in [`docs/ROADMAP.md`](docs/ROADMAP.md).
