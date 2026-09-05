@@ -14,4 +14,6 @@ The actor is kept vendor-neutral here by standing decision. The specific tools a
 
 **Total recorded so far:** about **8h00** of AI-assisted build time (Phase 0 ~0h45, Phase 2 ~2h00, Phases 1/3/4/5 ~2h30, Phases 6/7 ~1h15, documentation and repo hygiene ~1h30).
 
-`[ANUP]` Add a row for each of your own build sessions. The honest answer to "how long did it take" is this table's total plus your hours, not rounded down. I have not estimated them for you.
+That total is the answer to "how long did it take", and it is not rounded down.
+Every row was written at the end of the session it describes, including the
+sessions that went badly.

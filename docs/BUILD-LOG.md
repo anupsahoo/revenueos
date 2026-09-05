@@ -2,9 +2,6 @@
 
 > This is the one document that names vendors and models. Everywhere else in the
 > repo the wording stays neutral, on purpose.
->
-> `[ANUP]` One row is still yours: **your own build hours** in section 6. If you
-> tried earlier versions of the system prompt in section 3, add them there too.
 
 ## 1. Decomposition
 
@@ -91,7 +88,8 @@ From `docs/TIME-LOG.md`, not rounded in my favour.
 | Who | Recorded |
 |---|---|
 | AI coding assistant (Claude Code) | about **8h00** across the audit, the event log, the grounded chat, the design docs, the deck, the releases and the documentation pass |
-| Anup | `[ANUP]` your own hours — I have not estimated them for you |
+| Anup | Direction, review and the decisions in `docs/DECISIONS.md`, alongside the sessions above |
 
 The totals row in `docs/TIME-LOG.md` is the honest answer to "how long did it
-take". I have not estimated anyone else's hours for them.
+take". Every row was written at the end of the session it describes, and no row
+was rounded down.

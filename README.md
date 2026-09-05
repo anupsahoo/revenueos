@@ -46,6 +46,34 @@ Won opportunity  ─▶  OS event (brief)  ─▶  Agent retrieves templates + d
 Everything up to the commitment is automated. The commitment stays with a named
 human — see [`docs/THE-DECISION.md`](docs/THE-DECISION.md).
 
+## What is on the one screen
+
+Five regions, in the order you use them.
+
+| Region | What it does |
+|---|---|
+| **Seam health** | Green / amber / red counts, the reuse rate, and the oldest brief. All derived, none typed in. |
+| **Brief queue** | Every brief with its live age in business days and its status. Filter by account or problem. |
+| **Draft** | The retrieved matches with their reasons and scores, the editable POC plan, the handoff skeleton, and **accept / edit / reject**. |
+| **Ask the seam** | A chat with no memory and six read-only tools. It cites what it read and refuses what the tools do not hold. |
+| **Trigger log** | Every SLA escalation: when, which account, which named owner, and whether the draft was attached. |
+
+Three things on that screen that the problem statement did not ask for, and why
+they are there anyway:
+
+- **Skills needed against bench strength.** Each brief lists the skills it
+  requires against a bench inventory. Reuse answers *have we built this before*;
+  skills answer *can we staff it*. A POC date that ignores the second one slips.
+- **A prepare plan when there is a gap.** If the bench is short on a required
+  skill, the screen says who needs what, and roughly how long — rather than just
+  colouring the gap red.
+- **The ranking delta after a decision.** Accept or reject and the screen tells
+  you what moved in the library, so the learning is visible rather than claimed.
+
+Every button carries a **?** and every number carries an **ⓘ** that names the
+query behind it. There is a **How to use** guide in the header, written for
+someone who runs pre-sales and does not write software.
+
 ## Principles
 
 - **Every handoff is an event** — timestamped and owned; the append-only log is the source of truth.

@@ -4,9 +4,6 @@ Twelve weeks, one engineer, AI agents doing most of the typing. Issue numbers
 below are the live ones in this repo. I have not invented tickets and I have not
 renumbered anything.
 
-> `[ANUP]` The four-week cut at the bottom is the one judgement call here. It is
-> argued rather than asserted — check you would drop the same things first.
-
 ## Dependencies, and one thing out of order
 
 ```mermaid

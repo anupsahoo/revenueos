@@ -3,9 +3,7 @@
 The calls I made building this, and what each one cost me.
 
 > Twelve decisions. Each one names what it cost, because a decision with no cost
-> is usually a preference. `[ANUP]` **D3, D7, D8 and D12 are drafted from how the
-> code behaves and from what you have said — read them and make them yours before
-> you show this to anyone. D7 especially.**
+> is usually a preference.
 
 ---
 

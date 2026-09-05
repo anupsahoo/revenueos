@@ -1,35 +1,84 @@
-# RevenueOS — Enterprise Product Plan (pictorial)
+# RevenueOS — the product
 
-How RevenueOS works as a **multi-tenant platform** a trillion-dollar company would
-buy: many companies, many verticals, tens of thousands of users, onboarded team
-by team — retail today, banking tomorrow, healthcare the day after.
+One seam works today. This is what the rest of the product is, how the shipped
+loop generalises into it, and what each part would cost.
 
-> Planned as GitHub issues: [**milestones M0–M6**](https://github.com/anupsahoo/revenueos/milestones)
-> · [**epics**](https://github.com/anupsahoo/revenueos/issues?q=is%3Aissue+is%3Aopen+label%3Aepic)
+> **Read this as a plan.** Sections 1 and 2 describe software that runs.
+> Everything from section 3 onward is designed, ticketed and unbuilt. Where a
+> section is planned it says so, and it names the epic that would build it.
+>
+> Milestones: [M0–M6](https://github.com/anupsahoo/revenueos/milestones) ·
+> [epics](https://github.com/anupsahoo/revenueos/issues?q=is%3Aissue+is%3Aopen+label%3Aepic)
+> · **46 open, 18 closed**
 
 ---
 
-## ⚠️ What exists today, and what this document is
+## 1. What runs today (M0 · shipped)
 
-**Everything below this line is a plan, not a product.** Read it as the shape I
-would build toward, not as a description of running software.
+One screen: the Sales → PreSales operator loop, at
+[revenueos-blond.vercel.app](https://revenueos-blond.vercel.app).
 
-| | |
+```mermaid
+flowchart LR
+  E1["brief.arrived"] --> Q["Queue<br/>age · status"]
+  Q --> R["Retrieve<br/>3 matches + reasons"]
+  R --> D["Draft<br/>POC plan + handoff"]
+  D --> H{"Human<br/>accept / edit / reject"}
+  H --> E2["draft.accepted<br/>draft.rejected"]
+  E2 --> B["Boosts ±8"]
+  B -.re-ranks.-> R
+  Q --> S["SLA watch<br/>2 business days"]
+  S --> T["trigger.fired<br/>named owner + draft"]
+  E1 --> LOG[("Append-only event log")]
+  E2 --> LOG
+  T --> LOG
+  LOG --> DER["derive: age · status · queue<br/>reuse · boosts · health"]
+  DER --> Q
+```
+
+**The five things that make it a product rather than a demo:**
+
+| | What it means |
 |---|---|
-| **Shipped (M0)** | One screen: the Sales → PreSales operator loop, on an append-only event log, single tenant, synthetic data. 18 issues closed. That is all of it. |
-| **Planned (M1–M6)** | Everything on this page — multi-tenancy, onboarding journeys, vertical packs, the director cockpits, the agent platform. 45 open issues. No code. |
+| **The log is the only truth** | Nothing on screen is stored. Age, status, reuse, boosts, triggers and health are pure functions over an append-only event log. |
+| **Every number names its query** | Each figure carries an ⓘ showing how it was derived. A number that cannot show its query does not go on the screen. |
+| **Retrieval you can argue with** | Structured scoring with written reasons, threshold 40. A Solution Architect can push back on a match; nobody can push back on a similarity score. |
+| **The decision is the feedback** | No rating widget. Accept and reject are the signal, worth ±8 to every template the draft used. |
+| **The human holds the commitment** | The agent drafts and explains. It never presses Accept. |
 
-There is no auth, no second tenant, no cockpit and no vertical pack in the repo
-today. The diagrams here are how the shipped loop would generalise, drawn so the
-sequencing and the dependencies are arguable before anyone writes the code.
-What is actually built is in [`docs/STATUS.md`](docs/STATUS.md); what I chose not
-to build is in [`docs/CUT-LIST.md`](docs/CUT-LIST.md).
+Two more things are on the screen and are picked up as platform capabilities in
+sections 7 and 9: **skills needed against bench strength** per brief, with a
+prepare plan when there is a gap, and **"Ask the seam"** — a chat with no memory
+and six read-only tools that cites its sources and refuses what the tools cannot
+answer.
+
+**Honest limits.** Synthetic data, labelled on screen. In-memory event store, so
+a cold start loses every decision. Single tenant, no auth, no workers.
 
 ---
 
-## 1. Who uses it — tenancy & personas
+## 2. The bet
 
-> Built by [EPIC #20 · Multi-tenancy & identity](https://github.com/anupsahoo/revenueos/issues/20) — tickets [#30](https://github.com/anupsahoo/revenueos/issues/30) tenant model, [#31](https://github.com/anupsahoo/revenueos/issues/31) RBAC matrix, [#32](https://github.com/anupsahoo/revenueos/issues/32) SSO/SCIM, [#33](https://github.com/anupsahoo/revenueos/issues/33) isolation guards.
+A B2B software company loses 4.8 days at one seam because prior solutions are not
+retrievable at the moment a brief arrives. Fixing that seam is worth real money.
+Fixing *seams* — as a category, configurable per vertical, across many companies —
+is a platform.
+
+The generalisation is narrow and specific: **every seam has the same shape.**
+Something arrives, something has to be produced from prior work, a person commits
+to it, and a clock runs against an SLA. The shipped loop is one instance of that
+shape. Everything below is what it takes to run many instances for many
+companies.
+
+---
+
+## 3. Who uses it — tenancy and personas *(planned)*
+
+> [EPIC #20 · Multi-tenancy & identity](https://github.com/anupsahoo/revenueos/issues/20) —
+> [#30](https://github.com/anupsahoo/revenueos/issues/30) tenant model ·
+> [#31](https://github.com/anupsahoo/revenueos/issues/31) RBAC ·
+> [#32](https://github.com/anupsahoo/revenueos/issues/32) SSO/SCIM ·
+> [#33](https://github.com/anupsahoo/revenueos/issues/33) isolation guards
 
 ```mermaid
 flowchart TD
@@ -49,88 +98,79 @@ flowchart TD
   V2 --> SUP["Support Lead"]
 ```
 
-Each vertical is its **own world** — retail sales ≠ banking sales ≠ healthcare
-sales, and pre-sales differs the same way. A user belongs to a company, a
-vertical, and a role.
+Each vertical is its **own world** — retail sales is not banking sales, and
+pre-sales differs the same way. A user belongs to a company, a vertical and a
+role.
 
-### User types (RBAC)
-
-| Persona | Scope | What they do | Rough count @ scale |
+| Persona | Scope | What they do | Rough count at scale |
 |---|---|---|---|
 | Platform Super Admin | Platform | Operates RevenueOS, onboards companies | tens |
 | Tenant Admin | Company | Onboards verticals, systems, users | ~1–3 / company |
-| **Director of Sales** | Company / verticals | Forecast, seam-health across the portfolio | ~1 / company |
+| **Director of Sales** | Company / verticals | Forecast, seam health across the portfolio | ~1 / company |
 | **Director of Pre-Sales** | Company / verticals | Capacity, POC throughput, reuse | ~1 / company |
 | Sales Manager / AE | Vertical | Owns opportunities, hands off briefs | thousands |
-| Solution Architect | Vertical | Turns briefs into POC plans (the loop) | thousands |
+| **Solution Architect** | Vertical | Turns briefs into POC plans — **the shipped loop** | thousands |
 | Delivery Lead | Vertical | Receives the handoff | hundreds |
-| Support Lead | Vertical | Feeds renewal/upsell signals back | hundreds |
-| Viewer / Exec stakeholder | Company | Read-only dashboards | many |
+| Support Lead | Vertical | Feeds renewal and upsell signals back | hundreds |
+| Viewer / Exec stakeholder | Company | Read-only | many |
 
-**Scale target:** 20 companies · 40 projects · 20k–40k users · isolated per tenant.
+**Scale target:** 20 companies · 20k–40k users · isolated per tenant.
 
----
-
-## 2. How a company is onboarded (the journey)
-
-> Built by [EPIC #21 · Onboarding suite](https://github.com/anupsahoo/revenueos/issues/21) — [#34](https://github.com/anupsahoo/revenueos/issues/34) is this wizard, [#38](https://github.com/anupsahoo/revenueos/issues/38) the status tracker.
-
-```mermaid
-flowchart LR
-  A["Provision tenant"] --> B["Set org structure<br/>verticals + teams"]
-  B --> C["Connect systems<br/>CRM · call-intel · enrichment"]
-  C --> D["Invite admins & users<br/>assign roles"]
-  D --> E["Choose vertical packs<br/>retail / banking / healthcare"]
-  E --> F["Seed template library<br/>per vertical"]
-  F --> G["Dry-run: one test brief<br/>through the loop"]
-  G --> H["🟢 Go live"]
-  classDef done fill:#0e8a4322,stroke:#0e8a43;
-```
-
-Owner + status is tracked at every step (a pictorial progress map, not a form).
-
-## 3. How a system is onboarded
-
-> Built by [EPIC #27 · Data & integrations](https://github.com/anupsahoo/revenueos/issues/27) — [#56](https://github.com/anupsahoo/revenueos/issues/56) connector framework, [#57](https://github.com/anupsahoo/revenueos/issues/57) the first real CRM webhook, [#58](https://github.com/anupsahoo/revenueos/issues/58) call intelligence.
-
-```mermaid
-flowchart LR
-  S1["Pick source<br/>HubSpot / Salesforce / Gong"] --> S2["Authenticate<br/>OAuth / API key"]
-  S2 --> S3["Map events → seams<br/>e.g. deal-won → Brief"]
-  S3 --> S4["Send a test event"] --> S5["Validate shape"] --> S6["🟢 Enable"]
-```
-
-## 4. How a user is onboarded (RBAC)
-
-> Built by [#36](https://github.com/anupsahoo/revenueos/issues/36) invite and role assignment, on [#32](https://github.com/anupsahoo/revenueos/issues/32) SSO/SCIM and [#31](https://github.com/anupsahoo/revenueos/issues/31) the permissions matrix.
-
-```mermaid
-sequenceDiagram
-  autonumber
-  participant AD as Tenant Admin
-  participant U as New user
-  participant SYS as RevenueOS
-  AD->>SYS: Invite (email, role, vertical, team)
-  SYS->>U: Invitation + SSO link
-  U->>SYS: Accept via SSO
-  SYS->>SYS: Assign role + vertical scope (RBAC)
-  SYS-->>U: Role-based home + onboarding checklist
-  U->>SYS: Complete checklist → Active
-```
+Only the Solution Architect has a screen today. Everyone else in this table is a
+plan.
 
 ---
 
-## 5. Verticals are configurable "packs"
+## 4. The event model — how the loop generalises
 
-> Built by [EPIC #22 · Vertical packs](https://github.com/anupsahoo/revenueos/issues/22) — [#39](https://github.com/anupsahoo/revenueos/issues/39) is the schema, [#40](https://github.com/anupsahoo/revenueos/issues/40)/[#41](https://github.com/anupsahoo/revenueos/issues/41)/[#42](https://github.com/anupsahoo/revenueos/issues/42) the three packs, [#43](https://github.com/anupsahoo/revenueos/issues/43) the authoring screen.
+This is the part that decides whether the rest of the product is cheap or
+expensive to build, so it comes before the screens.
+
+```mermaid
+flowchart LR
+  subgraph TODAY["Shipped · one seam, one tenant"]
+    A1["brief.arrived"] --> A2["draft.generated"] --> A3["draft.accepted"]
+    A3 --> A4["sla.breached → trigger.fired"]
+  end
+  subgraph NEXT["Planned · same shape, any seam"]
+    B1["seam.arrived"] --> B2["seam.drafted"] --> B3["seam.committed"]
+    B3 --> B4["seam.breached → trigger"]
+  end
+  A4 -.same envelope.-> B1
+  B4 --> DER["One set of derive functions<br/>age · status · reuse · throughput"]
+```
+
+Every event carries the same envelope: `id`, `ts`, `type`, `actor`, `subject`,
+`payload`, `synthetic`. Adding a seam adds event *types*, not a new data model,
+and it inherits every derived number for free — age, status, breach, reuse.
+
+**What has to change to get there:** the log becomes per-tenant and durable
+([#53](https://github.com/anupsahoo/revenueos/issues/53)), and seam definitions
+move into vertical packs
+([#39](https://github.com/anupsahoo/revenueos/issues/39)). Nothing about the
+envelope changes.
+
+[#53](https://github.com/anupsahoo/revenueos/issues/53) is the first ticket after
+M0 whatever its milestone says, because everything on screen derives from the log
+and the log surviving a restart is the difference between a demo and a product.
+
+---
+
+## 5. Verticals are configuration, not code *(planned)*
+
+> [EPIC #22 · Vertical packs](https://github.com/anupsahoo/revenueos/issues/22) —
+> [#39](https://github.com/anupsahoo/revenueos/issues/39) schema ·
+> [#40](https://github.com/anupsahoo/revenueos/issues/40) / [#41](https://github.com/anupsahoo/revenueos/issues/41) / [#42](https://github.com/anupsahoo/revenueos/issues/42) packs ·
+> [#43](https://github.com/anupsahoo/revenueos/issues/43) authoring
 
 ```mermaid
 flowchart TD
-  VP["Vertical Pack (config, no code)"]
+  VP["Vertical Pack (config, no deploy)"]
   VP --> S["Seams + SLAs"]
   VP --> R["Regulators"]
   VP --> T["Template library seed"]
   VP --> AG["Agent persona + rules"]
+  VP --> SK["Skill taxonomy + bench"]
   VP --> CO["Compliance / residency"]
   subgraph Packs
     RT["🛍️ Retail<br/>fast cycles · light reg"]
@@ -142,42 +182,94 @@ flowchart TD
   VP -.instantiated as.-> HC
 ```
 
-Switching a team's vertical changes its seams, SLAs, templates and **agent
-behaviour** — no code change. That is how retail today / banking tomorrow works.
+Switching a team's pack changes its seams, SLAs, templates, **agent behaviour**
+and **skill taxonomy** with no code change. That is how "retail today, banking
+tomorrow" works, and the acceptance test for
+[#39](https://github.com/anupsahoo/revenueos/issues/39) is that the shipped loop
+is itself expressible as a pack.
 
 ---
 
-## 6. Platform architecture (multi-tenant)
+## 6. Onboarding is the product's first impression *(planned)*
 
-> Built by [EPIC #26 · Scale & event store](https://github.com/anupsahoo/revenueos/issues/26) and [EPIC #25 · Agent platform](https://github.com/anupsahoo/revenueos/issues/25). [#53](https://github.com/anupsahoo/revenueos/issues/53), the durable per-tenant store, is the first ticket after M0 — see `docs/ROADMAP.md`.
+> [EPIC #21 · Onboarding suite](https://github.com/anupsahoo/revenueos/issues/21)
+> · [EPIC #27 · Data & integrations](https://github.com/anupsahoo/revenueos/issues/27)
+
+**A company** — [#34](https://github.com/anupsahoo/revenueos/issues/34)
 
 ```mermaid
-flowchart TB
-  subgraph EXP["Experience layer (pictorial, role-based)"]
-    SC["Sales Director cockpit"]
-    PC["Pre-Sales Director cockpit"]
-    OP["Operator control surface (the loop)"]
-    ON["Onboarding journeys"]
-    ADM["Admin control plane"]
-  end
-  EXP --> GW["API + Auth / RBAC (SSO, SCIM)"]
-  GW --> CFG["Config: Vertical Packs"]
-  GW --> AGT["Agent platform<br/>per-vertical LangGraph · model routing · eval · tracing"]
-  GW --> EVB["Event backbone (per-tenant, append-only = source of truth)"]
-  AGT --> LLM(("AI model"))
-  EVB --> DB[("Tenant-isolated store<br/>Neon / Postgres")]
-  GW --> INT["Integrations: CRM · call-intel · enrichment"]
-  INT --> EVB
+flowchart LR
+  A["Provision tenant"] --> B["Set org structure<br/>verticals + teams"]
+  B --> C["Connect systems<br/>CRM · call-intel"]
+  C --> D["Invite admins & users<br/>assign roles"]
+  D --> E["Choose vertical packs"]
+  E --> F["Seed template library"]
+  F --> G["Dry-run: one real brief<br/>through the loop"]
+  G --> H["🟢 Go live"]
 ```
 
-Everything is **tenant-scoped**; health, reuse and rankings are **computed from
-the per-tenant event log**, never typed in.
+Go-live is blocked until a real brief has been through the real loop. Time from
+signed to first drafted plan is the number this epic is judged on.
+
+**A system** — [#56](https://github.com/anupsahoo/revenueos/issues/56),
+[#57](https://github.com/anupsahoo/revenueos/issues/57)
+
+```mermaid
+flowchart LR
+  S1["Pick source<br/>HubSpot / Salesforce / Gong"] --> S2["Authenticate"]
+  S2 --> S3["Map events → seams<br/>deal-won → brief.arrived"]
+  S3 --> S4["Test event"] --> S5["Validate + idempotency key"] --> S6["🟢 Enable"]
+```
+
+**A user** — [#36](https://github.com/anupsahoo/revenueos/issues/36)
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant AD as Tenant Admin
+  participant U as New user
+  participant SYS as RevenueOS
+  AD->>SYS: Invite (email, role, vertical, team)
+  SYS->>U: Invitation + SSO link
+  U->>SYS: Accept via SSO
+  SYS->>SYS: Assign role + vertical scope (RBAC)
+  SYS-->>U: Role-scoped home + checklist
+  U->>SYS: Complete checklist → Active
+```
+
+Every step's owner, state and age is derived from events and shown on a progress
+map ([#38](https://github.com/anupsahoo/revenueos/issues/38)), using the same
+amber and red rules as the seam. A stalled onboarding goes amber on its own.
 
 ---
 
-## 7. The two director cockpits (why they buy it)
+## 7. Can we build it, and can we staff it
 
-> Built by [EPIC #23 · Executive cockpits](https://github.com/anupsahoo/revenueos/issues/23) — [#44](https://github.com/anupsahoo/revenueos/issues/44) sales, [#45](https://github.com/anupsahoo/revenueos/issues/45) pre-sales, [#46](https://github.com/anupsahoo/revenueos/issues/46) the shared drilldown.
+Reuse answers *have we built this before*. Skills answer *can we staff it*. A POC
+date that ignores the second one is a date that slips.
+
+```mermaid
+flowchart LR
+  BR["Brief"] --> RQ["Skills required"]
+  BENCH[("Bench inventory<br/>skill → strength")] --> GAP{"Gap?"}
+  RQ --> GAP
+  GAP -- no --> OK["🟢 Staffable"]
+  GAP -- yes --> PREP["Prepare plan<br/>who, what, how long"]
+```
+
+The operator screen does this per brief today, against a synthetic bench. As a
+platform it becomes the Director of Pre-Sales' capacity view
+([#45](https://github.com/anupsahoo/revenueos/issues/45)), with the skill
+taxonomy coming from the vertical pack rather than from a constant.
+
+---
+
+## 8. The two director cockpits *(planned)*
+
+> [EPIC #23](https://github.com/anupsahoo/revenueos/issues/23) —
+> [#44](https://github.com/anupsahoo/revenueos/issues/44) sales ·
+> [#45](https://github.com/anupsahoo/revenueos/issues/45) pre-sales ·
+> [#46](https://github.com/anupsahoo/revenueos/issues/46) drilldown
 
 ```mermaid
 mindmap
@@ -194,16 +286,50 @@ mindmap
       ("Backlog & breaches")
 ```
 
-Each director answers one question at a glance — Sales: *where is the risk?*
-Pre-Sales: *where is the burden?* — then drills portfolio → company → vertical →
-brief. The operator loop (today's prototype) is one role's view inside this.
+Sales asks *where is the risk?* Pre-Sales asks *where is the burden?* Then both
+drill portfolio → company → vertical → brief.
+
+These are the screens most likely to tempt someone into typing a number in, which
+is why the rule from the shipped loop is the acceptance criterion: **no tile
+ships without a derive function and an ⓘ.**
 
 ---
 
-## Build order (milestones)
+## 9. Platform architecture *(planned)*
 
-Every ticket below has acceptance criteria, the files it would touch, what it
-depends on and a size. None of them is a placeholder, and none of them is built.
+```mermaid
+flowchart TB
+  subgraph EXP["Experience layer (role-based)"]
+    OP["Operator surface — SHIPPED"]
+    SC["Sales Director cockpit"]
+    PC["Pre-Sales Director cockpit"]
+    ON["Onboarding journeys"]
+    ADM["Admin control plane"]
+  end
+  EXP --> GW["API + Auth / RBAC (SSO, SCIM)"]
+  GW --> CFG["Config: Vertical Packs"]
+  GW --> AGT["Agent platform<br/>per-vertical graphs · routing · eval · tracing"]
+  GW --> ASK["Ask the seam<br/>read-only tools, cited answers"]
+  GW --> EVB["Event backbone<br/>per-tenant, append-only = source of truth"]
+  AGT --> LLM(("AI model"))
+  ASK -.reads.-> EVB
+  EVB --> DB[("Tenant-isolated store<br/>Postgres")]
+  GW --> INT["Integrations: CRM · call-intel · enrichment"]
+  INT --> EVB
+  EVB --> DER["derive functions<br/>every number, computed"]
+  DER --> EXP
+```
+
+Everything is tenant-scoped. Health, reuse and rankings are computed from the
+per-tenant event log, never typed in — the same rule the shipped screen already
+enforces.
+
+---
+
+## 10. Build order
+
+Every open ticket carries acceptance criteria, the files it would touch, what it
+depends on and a size. None is a placeholder. None is built.
 
 | Milestone | What it delivers | Epics | Open | Status |
 |---|---|---|---|---|
@@ -215,12 +341,12 @@ depends on and a size. None of them is a placeholder, and none of them is built.
 | **M5 · Agent platform & scale** | Per-vertical agents, eval, durable store, workers | [#25](https://github.com/anupsahoo/revenueos/issues/25), [#26](https://github.com/anupsahoo/revenueos/issues/26) | 9 | planned |
 | **M6 · Design system & governance** | Component library, audit, residency, posture | [#28](https://github.com/anupsahoo/revenueos/issues/28), [#29](https://github.com/anupsahoo/revenueos/issues/29) | 8 | planned |
 
-**46 open, 18 closed.** The one open M0 ticket is
-[#13](https://github.com/anupsahoo/revenueos/issues/13), reopened because only a skeleton exists and closed should mean
-done.
+The one open M0 ticket is
+[#13](https://github.com/anupsahoo/revenueos/issues/13), reopened because only a
+skeleton exists and closed should mean done.
 
-The milestone order is not the build order. [#53](https://github.com/anupsahoo/revenueos/issues/53) — the durable event
-store — sits in M5 and is the first thing I would build after M0, because
-everything on screen derives from the log and the log surviving a restart is the
-difference between a demo and a product. That argument, the twelve-week sequence
-and the four-week cut are in [`docs/ROADMAP.md`](docs/ROADMAP.md).
+**The milestone order is not the build order.** The twelve-week sequence, the
+dependency graph and what I would drop if I lost four weeks are in
+[`docs/ROADMAP.md`](docs/ROADMAP.md). What I deliberately left out, and what
+breaks first at ten times the volume, is in
+[`docs/CUT-LIST.md`](docs/CUT-LIST.md).

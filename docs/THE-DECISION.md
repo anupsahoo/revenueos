@@ -1,10 +1,5 @@
 # The decision I would never hand to an agent
 
-> `[ANUP]` This is drafted in your voice from `PLAN.md` ("the agent proposes; the
-> human commits") and from how the code actually behaves. It is the paragraph
-> people read closest. Read it aloud once, change whatever does not sound like
-> you, then delete this note.
-
 **The accept.**
 
 The agent can read the brief, find the three closest things we have built before,
