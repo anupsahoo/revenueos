@@ -52,4 +52,4 @@ Issues closed per sprint against the twelve-week plan in `docs/ROADMAP.md`, read
 off the milestones page. A ticket is closed only when code exists behind it. When
 something is dropped it gets the `cut` label and one line saying why, so the
 board stays a true picture rather than a tidy one. That is why #13 is open again:
-only a skeleton exists, and closed would have been a lie.
+only a skeleton existed, and closed would have been a lie. It is closed now, because the generator is built.

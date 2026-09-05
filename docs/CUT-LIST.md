@@ -14,7 +14,7 @@ What I left out, why, and what breaks first at ten times the volume.
 | **Root-cause tags on delays** (#16, labelled `cut`) | Useful analytics, but they do not clear a single brief faster. | Nothing immediately. At 10x they would start to matter for staffing decisions, not for the loop. |
 | **Real CRM ingest** (#57, dup #17) | Synthetic arrival events prove the shape. | Real webhooks bring retries, replays and duplicates. The log has no idempotency key on ingest yet, so the same won deal could arrive twice. |
 | **Tracing** (#52, dup #18) | Not needed to run one loop. | With many agent runs a day, a bad draft has no trail to explain it. |
-| **Full handoff generator** (#13, reopened) | Only the skeleton exists. I reopened the ticket rather than leave it closed, because closed should mean done. | Delivery keeps filling the same sections by hand, 10x more often. |
+| ~~**Full handoff generator** (#13)~~ **built** | Was a skeleton, so I reopened it rather than leave it closed. Then I built it: `lib/handoff.ts` generates the document from the accepted plan and reports the sections it cannot source instead of inventing them. | No longer a cut. The remaining gap is the access owner per system, which fills itself when the CRM connector lands (#57). |
 
 Everything above is either an open issue with a milestone, or labelled `cut`
 with a one-line reason on the issue itself. Nothing is closed unless code exists

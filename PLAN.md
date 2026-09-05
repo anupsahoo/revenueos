@@ -85,7 +85,7 @@ decisions and health were client-side first, and only became real once every
 number was derived from the event log instead of held in React state.
 
 1. ✅ Scaffold, event store, seed library + briefs (synthetic).
-2. ✅ Agent: retrieve + explain + draft POC plan & handoff skeleton.
+2. ✅ Agent: retrieve + explain + draft POC plan & the Delivery handoff.
 3. ✅ One control surface: queue, current draft, actions.
 4. ✅ Decisions loop: accept/edit/reject → events → reuse + ranking learn.
 5. ✅ Seam health computed + trigger on breach with draft attached.

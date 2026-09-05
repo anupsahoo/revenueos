@@ -1,11 +1,11 @@
 // The Brief→POC agent, built as a LangGraph state machine.
 //
-//   START ─▶ retrieve ─▶ draft ─▶ handoff ─▶ END
+//   START ─▶ retrieve ─▶ draft ─▶ assemble ─▶ END
 //
 // - retrieve: explainable structured scoring over the template library.
 // - draft:    an AI model writes the editable POC plan;
 //             deterministic sample fallback when the model is not configured.
-// - handoff:  assembles the Delivery handoff skeleton.
+// - assemble: builds the Delivery handoff document from the plan.
 //
 // Runs server-side only (imported from the /api/draft route).
 
@@ -13,7 +13,8 @@ import { StateGraph, Annotation, START, END } from "@langchain/langgraph";
 import { ChatAnthropic } from "@langchain/anthropic";
 import { SystemMessage, HumanMessage } from "@langchain/core/messages";
 import { retrieve } from "./retrieval";
-import { planFor, handoffSkeleton, templateById, type Brief, type PocPlan, type TemplateMatch } from "./mock";
+import { planFor, templateById, type Brief, type PocPlan, type TemplateMatch } from "./mock";
+import { generateHandoff, type HandoffDoc } from "./handoff";
 
 export type DraftSource = "ai" | "sample";
 
@@ -87,7 +88,7 @@ const GraphState = Annotation.Root({
   boosts: Annotation<Record<string, number>>(),
   matches: Annotation<TemplateMatch[]>(),
   plan: Annotation<PocPlan>(),
-  handoff: Annotation<{ section: string; note: string }[]>(),
+  handoff: Annotation<HandoffDoc>(),
   source: Annotation<DraftSource>(),
   model: Annotation<string | null>(),
 });
@@ -121,8 +122,10 @@ async function draftNode(s: State): Promise<Partial<State>> {
   }
 }
 
+// Builds the Delivery handoff from the brief, the drafted plan and the matches.
+// Sections with no source are reported as gaps rather than filled in.
 async function handoffNode(s: State): Promise<Partial<State>> {
-  return { handoff: handoffSkeleton(s.brief) };
+  return { handoff: generateHandoff(s.brief, s.plan, s.matches ?? [], templateById) };
 }
 
 const workflow = new StateGraph(GraphState)
@@ -139,7 +142,7 @@ const compiled = workflow.compile();
 export interface BriefToPocResult {
   matches: TemplateMatch[];
   plan: PocPlan;
-  handoff: { section: string; note: string }[];
+  handoff: HandoffDoc;
   source: DraftSource;
   model: string | null;
 }
@@ -149,7 +152,7 @@ export async function runBriefToPoc(brief: Brief, boosts: Record<string, number>
   return {
     matches: out.matches ?? [],
     plan: out.plan ?? planFor(brief),
-    handoff: out.handoff ?? handoffSkeleton(brief),
+    handoff: out.handoff ?? generateHandoff(brief, out.plan ?? planFor(brief), out.matches ?? [], templateById),
     source: out.source ?? "sample",
     model: out.model ?? null,
   };

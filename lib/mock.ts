@@ -120,17 +120,6 @@ export function planFor(b: Brief): PocPlan {
   };
 }
 
-export function handoffSkeleton(b: Brief): { section: string; note: string }[] {
-  return [
-    { section: "Account & context", note: `${b.account} — ${b.segment}, ${b.region}, regulator ${b.regulator}` },
-    { section: "Problem statement", note: b.problem },
-    { section: "Agreed success criteria", note: "Pulled from the POC plan; confirm with the customer sponsor" },
-    { section: "Environments & access", note: `Systems: ${b.systems.join(", ")} — access owners to confirm` },
-    { section: "Data handling & security", note: "Data residency, PII controls, retention — confirm with security" },
-    { section: "Delivery team & RACI", note: "To be staffed at handoff" },
-    { section: "Risks & dependencies", note: "Carried from the POC plan; owner per risk" },
-  ];
-}
 
 // ---- Skills: what the project needs vs what the team has ---------------------
 // Bench strength, 0-100. Our strength is Salesforce / Commerce / retail; the

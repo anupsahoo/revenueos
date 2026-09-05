@@ -9,7 +9,7 @@ loop generalises into it, and what each part would cost.
 >
 > Milestones: [M0–M6](https://github.com/anupsahoo/revenueos/milestones) ·
 > [epics](https://github.com/anupsahoo/revenueos/issues?q=is%3Aissue+is%3Aopen+label%3Aepic)
-> · **46 open, 18 closed**
+> · **45 open, 19 closed**
 
 ---
 
@@ -333,7 +333,7 @@ depends on and a size. None is a placeholder. None is built.
 
 | Milestone | What it delivers | Epics | Open | Status |
 |---|---|---|---|---|
-| **M0 · Prototype** | The Sales → PreSales loop on an event log | — | 1 | **shipped**, 18 closed |
+| **M0 · Prototype** | The Sales → PreSales loop on an event log | — | 0 | **complete**, 19 closed |
 | **M1 · Multi-tenant foundation** | Tenancy, RBAC, SSO, isolation | [#20](https://github.com/anupsahoo/revenueos/issues/20) | 5 | planned |
 | **M2 · Onboarding suite** | Company, vertical, user, project journeys + real sources | [#21](https://github.com/anupsahoo/revenueos/issues/21), [#27](https://github.com/anupsahoo/revenueos/issues/27) | 10 | planned |
 | **M3 · Vertical packs** | Retail, banking, healthcare as configuration | [#22](https://github.com/anupsahoo/revenueos/issues/22) | 6 | planned |
@@ -341,9 +341,9 @@ depends on and a size. None is a placeholder. None is built.
 | **M5 · Agent platform & scale** | Per-vertical agents, eval, durable store, workers | [#25](https://github.com/anupsahoo/revenueos/issues/25), [#26](https://github.com/anupsahoo/revenueos/issues/26) | 9 | planned |
 | **M6 · Design system & governance** | Component library, audit, residency, posture | [#28](https://github.com/anupsahoo/revenueos/issues/28), [#29](https://github.com/anupsahoo/revenueos/issues/29) | 8 | planned |
 
-The one open M0 ticket is
-[#13](https://github.com/anupsahoo/revenueos/issues/13), reopened because only a
-skeleton exists and closed should mean done.
+M0 is closed out. [#13](https://github.com/anupsahoo/revenueos/issues/13) was
+reopened when only a skeleton existed, and closed again once the generator was
+actually built — see `lib/handoff.ts`.
 
 **The milestone order is not the build order.** The twelve-week sequence, the
 dependency graph and what I would drop if I lost four weeks are in

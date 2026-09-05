@@ -23,9 +23,15 @@ and the issues closed without code were reopened or relabelled `cut` — see the
 note in the README.
 
 **Still not true today:** the event store is in memory, so a cold start loses
-every decision ([#53](https://github.com/anupsahoo/revenueos/issues/53)); there is
-no auth and one tenant; and [#13](https://github.com/anupsahoo/revenueos/issues/13)
-is a handoff *skeleton*, not a generator, which is why it is open.
+every decision ([#53](https://github.com/anupsahoo/revenueos/issues/53)), and
+there is no auth and one tenant.
+
+[#13](https://github.com/anupsahoo/revenueos/issues/13) was the last open M0
+ticket. It is now built: `lib/handoff.ts` generates the Delivery handoff from the
+accepted plan, marks any section it cannot source as needing a person instead of
+filling it with plausible text, attaches the document to the `draft.accepted`
+event, and is deterministic so two generations of the same plan diff to nothing.
+**M0 is complete: 19 closed, 0 open.**
 
 ---
 

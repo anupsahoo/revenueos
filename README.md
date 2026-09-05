@@ -34,7 +34,7 @@ Full statement: [`docs/PROBLEM.md`](docs/PROBLEM.md).
 
 ```
 Won opportunity  ─▶  OS event (brief)  ─▶  Agent retrieves templates + drafts
-   (CRM-shaped)                              POC plan & handoff skeleton
+   (CRM-shaped)                              POC plan & Delivery handoff
                                                      │
                                                      ▼
    Seam health  ◀──  OS events  ◀──  Solution Architect accepts / edits / rejects
@@ -54,7 +54,7 @@ Five regions, in the order you use them.
 |---|---|
 | **Seam health** | Green / amber / red counts, the reuse rate, and the oldest brief. All derived, none typed in. |
 | **Brief queue** | Every brief with its live age in business days and its status. Filter by account or problem. |
-| **Draft** | The retrieved matches with their reasons and scores, the editable POC plan, the handoff skeleton, and **accept / edit / reject**. |
+| **Draft** | The retrieved matches with their reasons and scores, the editable POC plan, the generated Delivery handoff, and **accept / edit / reject**. |
 | **Ask the seam** | A chat with no memory and six read-only tools. It cites what it read and refuses what the tools do not hold. |
 | **Trigger log** | Every SLA escalation: when, which account, which named owner, and whether the draft was attached. |
 
@@ -151,7 +151,7 @@ stateDiagram-v2
   [*] --> retrieve
   retrieve --> draft: matches[] + reasons
   draft --> assemble: plan (AI or sample)
-  assemble --> [*]: + handoff skeleton
+  assemble --> [*]: + Delivery handoff
 ```
 
 ### Every file, and how it connects
@@ -168,6 +168,8 @@ stateDiagram-v2
 | `app/api/events/route.ts` | API | Raw read of the event log | Lets anyone check the screen against the source | → `lib/events` |
 | `lib/events.ts` | Backend | The append-only log behind one interface; in-memory implementation | Single source of truth | seeded by `lib/seed` |
 | `lib/derive.ts` | Backend | Pure functions over the log: business-day age, status, queue, reuse, boosts, triggers, health | Every number on screen, computed not stored | reads events only |
+| `lib/handoff.ts` | Backend | Generates the Delivery handoff from the accepted plan; marks any section it cannot source as needing a person | Delivery stops retyping the same sections ([#13](https://github.com/anupsahoo/revenueos/issues/13)) | pure — takes brief, plan, matches |
+| `lib/handoff.test.ts` | Test | Coverage arithmetic, the unsourceable section, and determinism | Proves it reports gaps instead of inventing them | tests `lib/handoff` |
 | `lib/derive.test.ts` | Test | Five tests over the arithmetic, incl. weekends | `npm test` proves the numbers | tests `lib/derive` |
 | `lib/seed.ts` | Data | Turns synthetic briefs into arrival events; already-late briefs carry breach + trigger | Gives the demo a believable starting log | → `lib/mock` |
 | `lib/events.postgres.ts` | Backend | Interface stub and table shape for the durable store | The one-env-var swap, written but not built ([#53](https://github.com/anupsahoo/revenueos/issues/53)) | would replace `lib/events` |
@@ -182,7 +184,7 @@ stateDiagram-v2
 - **LangGraph** (`@langchain/langgraph`) for the three-node agent; **the Anthropic SDK** for the tool-use loop behind "Ask the seam".
 - **Append-only event store behind one interface** — in-memory + seed so it runs anywhere with no accounts; swappable to Neon / Vercel Postgres for durability.
 - **Explainable structured retrieval** over a seeded library that **learns from accept/reject**.
-- **`node --test`** over the derive functions — no test framework, TypeScript run directly.
+- **`node --test`** over the derive and handoff functions — ten tests, no test framework, TypeScript run directly.
 
 All data in this repo is synthetic.
 
@@ -190,7 +192,7 @@ All data in this repo is synthetic.
 
 ```bash
 npm install
-npm test             # 5 tests over the derive arithmetic
+npm test             # 10 tests over the derive and handoff arithmetic
 npm run dev          # http://localhost:3000
 npm run build        # production build
 ```
@@ -233,11 +235,9 @@ project environment variables to enable AI drafting and the grounded chat.
 ## Plan and tickets
 
 The shipped code is the **M0 prototype** — a working single-tenant Brief → POC
-loop, closed as 18 issues. The enterprise product (multi-tenant, per-vertical,
-exec cockpits, onboarding journeys) is planned as **45 open issues across
-[M1–M6](https://github.com/anupsahoo/revenueos/milestones)**, plus
-[#13](https://github.com/anupsahoo/revenueos/issues/13) reopened in M0 because
-only a skeleton exists and closed should mean done.
+loop, closed as **19 issues — M0 is complete**. The enterprise product
+(multi-tenant, per-vertical, exec cockpits, onboarding journeys) is planned as
+**45 open issues across [M1–M6](https://github.com/anupsahoo/revenueos/milestones)**.
 
 Every open ticket carries acceptance criteria, the files it would touch, what it
 depends on and a size. They are written to be argued with before anyone builds

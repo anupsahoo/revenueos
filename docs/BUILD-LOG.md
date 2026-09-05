@@ -87,7 +87,7 @@ From `docs/TIME-LOG.md`, not rounded in my favour.
 
 | Who | Recorded |
 |---|---|
-| AI coding assistant (Claude Code) | about **8h00** across the audit, the event log, the grounded chat, the design docs, the deck, the releases and the documentation pass |
+| AI coding assistant (Claude Code) | about **9h00** across the audit, the event log, the grounded chat, the design docs, the deck, the releases, the documentation pass and the handoff generator |
 | Anup | Direction, review and the decisions in `docs/DECISIONS.md`, alongside the sessions above |
 
 The totals row in `docs/TIME-LOG.md` is the honest answer to "how long did it

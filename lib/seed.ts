@@ -2,7 +2,8 @@
 // and the age is computed from it. Everything here is synthetic and flagged.
 
 import type { OsEvent, OsEventType } from "./events";
-import { BRIEFS, SLA_DAYS, SOLUTION_ARCHITECT, businessDaysBetween, planFor, handoffSkeleton } from "./mock";
+import { BRIEFS, SLA_DAYS, SOLUTION_ARCHITECT, businessDaysBetween, planFor, templateById } from "./mock";
+import { generateHandoff } from "./handoff";
 import { retrieve } from "./retrieval";
 
 const DAY = 86_400_000;
@@ -30,7 +31,8 @@ export function seedEvents(): OsEvent[] {
     if (age >= SLA_DAYS) {
       // A draft already existed on these, so the escalation has something to attach.
       const matches = retrieve(b, {});
-      const draft = { matches, source: "sample" as const, model: null, plan: planFor(b), handoff: handoffSkeleton(b) };
+      const plan = planFor(b);
+      const draft = { matches, source: "sample" as const, model: null, plan, handoff: generateHandoff(b, plan, matches, templateById) };
       out.push(ev("draft.generated", arrived + 0.4 * DAY, "agent", b.id, { matches, source: "sample", model: null }));
       out.push(ev("sla.breached", arrived + SLA_DAYS * DAY, "system", b.id, { ageAtTransition: SLA_DAYS, slaDays: SLA_DAYS }));
       out.push(ev("trigger.fired", arrived + SLA_DAYS * DAY, "system", b.id, {

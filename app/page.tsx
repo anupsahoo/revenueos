@@ -6,9 +6,10 @@ import {
   requiredSkills, skillAvail, skillStatus, skillCoverage, skillPrepPlan,
   type Brief, type TemplateMatch, type PocPlan,
 } from "@/lib/mock";
+import { handoffCoverage, handoffGaps, handoffToMarkdown, type HandoffDoc } from "@/lib/handoff";
 import type { QueueRow, TriggerRow, Status } from "@/lib/derive";
 
-interface Draft { matches: TemplateMatch[]; plan: PocPlan; handoff: { section: string; note: string }[]; source: "ai" | "sample"; model: string | null; }
+interface Draft { matches: TemplateMatch[]; plan: PocPlan; handoff: HandoffDoc; source: "ai" | "sample"; model: string | null; }
 interface Seam {
   now: string; slaDays: number;
   health: { green: number; amber: number; red: number; worstBriefId?: string; worstAge: number };
@@ -54,6 +55,7 @@ export default function Operator() {
   const [seam, setSeam] = useState<Seam | null>(null);
   const [theme, setTheme] = useState<"light" | "dark" | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [loading, setLoading] = useState<Record<string, boolean>>({});
   const [edited, setEdited] = useState<Record<string, Partial<PocPlan>>>({});
@@ -314,8 +316,34 @@ export default function Operator() {
             </div>
 
             <div>
-              <div className="sec-eyebrow"><span className="eyebrow">Handoff to Delivery</span></div>
-              <div className="handoff">{(draft?.handoff ?? []).map((h, i) => <div className="hrow" key={i}><span className="s">{h.section}</span><span className="n">{h.note}</span></div>)}</div>
+              <div className="sec-eyebrow">
+                <span className="eyebrow">Handoff to Delivery</span>
+                {draft?.handoff ? (<>
+                  <span className="hcov">{handoffCoverage(draft.handoff).sourced} of {handoffCoverage(draft.handoff).total} sections sourced</span>
+                  <Info id="hcov" open={info} set={setInfo}
+                    text="Sections that pulled at least one line from the brief or the accepted plan, divided by all sections. A section with no source is never filled in with plausible text — it is listed below as needing a human. Query: handoffCoverage()." />
+                  <button className="ghost sm" onClick={() => { navigator.clipboard?.writeText(handoffToMarkdown(draft.handoff)); setCopied(true); setTimeout(() => setCopied(false), 1800); }}>
+                    {copied ? "Copied" : "Copy document"}
+                  </button>
+                  <Info id="hcopy" glyph="?" label="What this button does" open={info} set={setInfo}
+                    text="Copies the whole handoff as Markdown, ready to paste to Delivery. Generation is deterministic, so copying the same accepted plan twice gives you an identical document — you can diff it against the one you sent." />
+                </>) : null}
+              </div>
+              <div className="handoff">
+                {(draft?.handoff?.sections ?? []).map((h) => (
+                  <div className={`hrow ${h.lines.length ? "" : "gap"}`} key={h.id}>
+                    <span className="s">{h.title}</span>
+                    <span className="n">
+                      {h.lines.length
+                        ? <>{h.lines.map((l, i) => <span className="hline" key={i}>{l}</span>)}<span className="hsrc">from {h.source}</span></>
+                        : <><b>Needs a human.</b> {h.missing}</>}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              {draft?.handoff && handoffGaps(draft.handoff).length > 0 ? (
+                <p className="hnote">This document does not invent what it cannot source. {handoffGaps(draft.handoff).length} section{handoffGaps(draft.handoff).length === 1 ? "" : "s"} above need a person before kickoff.</p>
+              ) : null}
             </div>
           </div>
 
