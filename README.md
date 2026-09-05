@@ -130,11 +130,24 @@ All data in this repo is synthetic.
 ## Status
 
 🟢 Live on Vercel — [revenueos-blond.vercel.app](https://revenueos-blond.vercel.app).
-Working control surface with the agent wired in: explainable retrieval and POC
-drafting run behind the UI (`/api/draft`); seam health, reuse and triggers are
-computed live. The public demo drafts with a deterministic sample plan; set
-`ANTHROPIC_API_KEY` to draft with the AI model. Persistent event store (Neon/Postgres)
-is the next step — see [`PLAN.md`](PLAN.md).
+
+One screen, one loop. A brief arrives as an event, the agent retrieves matching
+past solutions and drafts an editable POC plan, the Solution Architect accepts,
+edits or rejects, and the seam watches its own SLA.
+
+Nothing on the screen is typed in. Every action writes to an append-only event
+log (`lib/events.ts`) and every number is worked out from that log by a small
+function in `lib/derive.ts`: brief age in business days, green/amber/red status,
+the queue, the reuse rate, the ranking boosts, the trigger log and the health
+counts. Each number on screen carries an ⓘ that names the query behind it. The
+screen re-reads the log every 30 seconds, and a brief that passes the two-day
+SLA fires an escalation to the named owner with the draft attached.
+
+The event store is in memory, so it resets when the instance sleeps. That is
+stated on screen. The durable swap is one environment variable and is left as a
+documented interface in `lib/events.postgres.ts` (issue #53). All data is
+synthetic. Drafting falls back to a deterministic sample plan when no AI key is
+set, so the demo runs with no configuration. Run `npm test` for the arithmetic.
 
 ## Deploy your own
 
