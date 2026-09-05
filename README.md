@@ -43,10 +43,14 @@ instant a brief arrives, and measures reuse going up.
 
 ## Plan & tickets
 
-The whole assignment is planned as GitHub issues under the
-[**M1 · Brief→POC loop**](https://github.com/anupsahoo/revenueos/milestones) milestone —
-[closed = done, open = pending](https://github.com/anupsahoo/revenueos/issues?q=is%3Aissue).
-The core loop is complete; persistence and the stretch goals are the open tickets.
+The shipped code (this repo) is the **M0 prototype** — a working single-tenant
+Brief→POC loop. The **enterprise product** (multi-tenant, per-vertical, exec
+cockpits, onboarding journeys, 40k users) is planned as
+[**10 epics + 35 stories across M1–M6**](https://github.com/anupsahoo/revenueos/milestones).
+
+➡️ **See [`PRODUCT.md`](PRODUCT.md)** for the pictorial product plan: personas &
+tenancy, company/system/user onboarding journeys, vertical packs, the
+multi-tenant architecture, and the two director cockpits.
 
 ## Architecture, end to end (pictorial)
 
