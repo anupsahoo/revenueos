@@ -69,6 +69,24 @@ region of origin, recency — with a written reason per candidate, optionally
 blended with vector similarity. Accept/reject adjusts per-template weights so
 ranking improves over time.
 
+## Which tool would own which part, in production
+
+Everything here is synthetic. If this ran for real, I would not build any of the
+edges — I would buy them, and keep the loop:
+
+| Part of the loop | Owned by | Why not us |
+|---|---|---|
+| The won-opportunity event | **HubSpot** (or Salesforce), via a deal-stage webhook | The CRM already knows when a deal is won and who owns it. Re-deriving that is how you get two disagreeing sources of truth. |
+| Brief content | **Gong** transcript + CRM fields | The brief Sales types is a summary; the call is what the customer said. Retrieval gets materially better on the second one. |
+| Firmographics on the account | **Apollo** or **Clearbit** | Segment, regulator and systems drive the whole retrieval score. Enriching them beats asking an AE to type them. |
+| The template library | **Notion** or Confluence, indexed into Postgres | Architects already write POC write-ups somewhere. Making them write them again in our tool is how the library dies. |
+| **The seam itself — events, SLA, retrieval, draft, decision** | **This system** | This is the part nobody sells. It is the whole reason the product exists. |
+| Trigger delivery | **Slack** incoming webhook | Escalations have to arrive where the architect already is. The in-app trigger log is the record; Slack is the notification. |
+
+The line I would hold is that the event log stays ours. The moment health is
+computed anywhere but from our own append-only log, "computed, not reported"
+stops being true.
+
 ## Data shapes
 
 - **Brief** — account, region, segment (retail bank / insurer / capital markets /

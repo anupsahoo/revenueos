@@ -180,6 +180,22 @@ stateDiagram-v2
 
 ## Stack
 
+**Why this stack, in one paragraph.** Next.js on Vercel because the whole thing
+is one screen plus five API routes, and a single TypeScript repo means the
+derive functions that compute the numbers are literally the same code the screen
+imports — there is no second implementation to drift. LangGraph for the agent
+because the path is known and fixed edges make a bad draft traceable to one of
+three nodes, where a free-form loop would make it a transcript to read. The
+Anthropic SDK's tool use for the chat, because grounding it in tools rather than
+memory is the entire point of that feature. An append-only event log behind one
+interface, in memory by default, because it lets the thing run anywhere with no
+accounts while leaving a one-env-var swap to Postgres — I would rather ship the
+loop and be honest about the limit than spend the day on a database. And
+`node --test` over TypeScript directly, so there is no test framework to install
+for ten tests. The one thing I would change with more time is the store, and it
+is already written as an interface.
+
+
 - **Next.js (App Router) + TypeScript**, deployed on **Vercel** — one repo, one control surface, API routes.
 - **LangGraph** (`@langchain/langgraph`) for the three-node agent; **the Anthropic SDK** for the tool-use loop behind "Ask the seam".
 - **Append-only event store behind one interface** — in-memory + seed so it runs anywhere with no accounts; swappable to Neon / Vercel Postgres for durability.

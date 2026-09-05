@@ -1,5 +1,24 @@
 # The decision I would never hand to an agent
 
+**The accept.** The agent can read the brief, find the three closest things we
+have built before, explain why each one fits, and draft a POC plan good enough to
+send — and I let it, because it is faster than me and it does not get bored on
+the fifteenth brief. What it does not do is press Accept, because pressing Accept
+is not a document being finished; it is a promise to a customer about what we
+will prove, in how many weeks, under their regulator. The person who makes that
+promise has to be the person who will be in the room when it slips, and who can
+weigh what is nowhere in the event log: that this bank's security review always
+runs three weeks long, that this account is one bad POC away from leaving, that
+we have one Guidewire engineer and she is on holiday in March. The agent
+optimises for the best match against what we have already built; a Solution
+Architect decides what we are willing to be held to. So the loop is deliberately
+asymmetric — everything up to the commitment is automated, and the commitment
+itself stays with a named human, recorded as an event with their name on it.
+
+---
+
+## The longer version
+
 **The accept.**
 
 The agent can read the brief, find the three closest things we have built before,

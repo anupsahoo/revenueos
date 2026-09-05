@@ -3,6 +3,40 @@
 > This is the one document that names vendors and models. Everywhere else in the
 > repo the wording stays neutral, on purpose.
 
+## The one-page version
+
+**Decomposition.** I split the problem statement into its six requirements, made
+each a ticket, and built them depth-first — one loop, not five screens. I did the
+screen second rather than last, because the surface is the specification: once I
+could see the queue, the draft and the three buttons, the event model was
+obvious.
+
+**Tools.** Claude Code (Anthropic CLI) on Claude Opus 4.8 then Opus 5 wrote most
+of the code; I directed it and owned the decisions. LangGraph for the agent, the
+Anthropic SDK's tool use for the grounded chat, Next.js on Vercel, `node --test`
+for tests, python-pptx and headless Chrome for the deck.
+
+**The instruction I iterated most.** The agent system prompt in `lib/graph.ts`.
+Two lines were added for concrete failures: *"Only reference template ids from
+the list you are given"*, after the model invented plausible ids that broke the
+ranking (boosts are keyed on template id); and *"Respond with ONLY a JSON
+object"*, after it returned prose then fenced JSON and `JSON.parse` threw
+silently into the fallback.
+
+**What failed first.** LangGraph refused to compile because I had named a node
+and a state channel `handoff`. Then a rename with BSD `sed` silently skipped a
+field because `\b` is unsupported. Then drafting fell back to the sample under
+slow calls, which is why the source badge exists at all.
+
+**What I discarded.** Client-side decisions and a static `ageDays` field — both
+replaced by events and computed age. An entire five-screen version: a portfolio
+command centre, two cockpits, onboarding, a chart kit and a generated dataset of
+2,025 companies. Deleted, because they implied capability I had not built.
+
+*Full detail below.*
+
+---
+
 ## 1. Decomposition
 
 I split the problem statement into its six requirements and made each a ticket: R1 event
