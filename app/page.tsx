@@ -15,6 +15,7 @@ import {
   type TemplateMatch,
   type PocPlan,
 } from "@/lib/mock";
+import { EnginePipeline, SlaGauge, Sparkline, RegionBars } from "./components/Visuals";
 
 type Decision = "accepted" | "rejected" | undefined;
 
@@ -53,6 +54,7 @@ export default function ControlSurface() {
   const [editMode, setEditMode] = useState(false);
   const [selectedId, setSelectedId] = useState<string>(BRIEFS[0].id);
   const [reuse, setReuse] = useState(21);
+  const [reuseHistory, setReuseHistory] = useState<number[]>([21]);
   const [triggers, setTriggers] = useState<Trigger[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
   const [drafts, setDrafts] = useState<Record<string, DraftPayload>>({});
@@ -76,6 +78,9 @@ export default function ControlSurface() {
     document.documentElement.setAttribute("data-theme", theme);
     try { localStorage.setItem("revos-theme", theme); } catch {}
   }, [theme]);
+  useEffect(() => {
+    setReuseHistory((h) => (h[h.length - 1] === reuse ? h : [...h, reuse].slice(-24)));
+  }, [reuse]);
 
   const pushEvent = useCallback((kind: EventItem["kind"], text: React.ReactNode, time = "just now") => {
     setEvents((prev) => [{ id: evId.current++, kind, time, text }, ...prev].slice(0, 40));
@@ -198,6 +203,18 @@ export default function ControlSurface() {
       </header>
 
       <main className="main">
+        {/* Pictorial hero: the revenue engine + live SLA gauge */}
+        <section className="panel" style={{ display: "grid", gridTemplateColumns: "1fr 150px", gap: 0, marginBottom: 16, overflow: "hidden" }}>
+          <div style={{ padding: "16px 18px", borderRight: "1px solid var(--line)" }}>
+            <div className="eyebrow" style={{ marginBottom: 4 }}>{"// The revenue engine · Sales→PreSales seam is live"}</div>
+            <EnginePipeline status={seamStatus} age={worst} sla={SLA_DAYS} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "12px" }}>
+            <SlaGauge age={worst} sla={SLA_DAYS} status={seamStatus} />
+            <span className={`status-pill status-${seamStatus}`} style={{ transform: "scale(0.85)" }}><span className="dot" />{STATUS_LABEL[seamStatus]}</span>
+          </div>
+        </section>
+
         <section className="seam" aria-label="Seam health">
           <div className="seam-cell seam-headline">
             <div className="name">Won-opportunity → POC pickup</div>
@@ -335,8 +352,14 @@ export default function ControlSurface() {
             <div className="panel reuse-meter">
               <div className="eyebrow">Reuse of prior solutions</div>
               <div className="big mono" style={{ color: "var(--accent)", marginTop: 6 }}>{reuse}%</div>
+              <Sparkline values={reuseHistory} />
               <div className="track"><i style={{ width: `${reuse}%` }} /></div>
               <div className="nums"><span>US start 21%</span><span>UK 58% · India 55%</span></div>
+            </div>
+
+            <div className="panel">
+              <div className="panel-head"><h2>Pickup time by region</h2><span className="count">variance</span></div>
+              <RegionBars sla={SLA_DAYS} />
             </div>
 
             <div className="panel">

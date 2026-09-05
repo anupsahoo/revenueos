@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 import { BRIEFS } from "@/lib/mock";
-import { retrieve } from "@/lib/retrieval";
-import { draftPoc } from "@/lib/agent";
-import { handoffSkeleton } from "@/lib/mock";
+import { runBriefToPoc } from "@/lib/graph";
 
-// The agent may call Claude, so allow generous time on Node runtime.
+// The LangGraph agent may call Claude, so allow generous time on Node runtime.
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
@@ -21,18 +19,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unknown briefId" }, { status: 400 });
   }
 
-  // 1) Explainable retrieval (learns from decision boosts)
-  const matches = retrieve(brief, body.boosts ?? {});
+  // START ▸ retrieve ▸ draft ▸ handoff ▸ END
+  const { matches, plan, handoff, source, model } = await runBriefToPoc(brief, body.boosts ?? {});
 
-  // 2) The agent drafts the POC plan (Claude, or sample fallback)
-  const { plan, source, model } = await draftPoc(brief, matches);
-
-  return NextResponse.json({
-    briefId: brief.id,
-    matches,
-    plan,
-    handoff: handoffSkeleton(brief),
-    source,
-    model: model ?? null,
-  });
+  return NextResponse.json({ briefId: brief.id, matches, plan, handoff, source, model });
 }
