@@ -62,9 +62,10 @@ log, the library and the docs. Ask it the weather and it refuses."
 
 **6:30 — the plan, honestly**
 
-Switch to the repo. Milestones page: M0 shipped, M1 to M6 planned as 48 open
-issues. Show one issue labelled **`cut`** with its reason. Show `#13` reopened,
-because only a skeleton exists and closed should mean done. One sentence on 10x:
+Switch to the repo. Milestones page: M0 shipped as 18 closed issues, M1 to M6
+planned as 45 more. Show one issue labelled **`cut`** with its reason. Show `#13`
+reopened, because only a skeleton exists and closed should mean done. One
+sentence on 10x:
 *"The in-memory store breaks first. A cold start loses every decision. That is
 issue #53 and the interface for it is already written."*
 

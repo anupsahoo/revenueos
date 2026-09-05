@@ -331,7 +331,7 @@ def build(out: Path):
         run = p.add_run(); run.text = t
         run.font.size = Pt(sz); run.font.bold = b; run.font.color.rgb = c
     text(s, Inches(0.95), Inches(6.15), Inches(11.5), Inches(0.6),
-         [("48 open issues across six milestones. Nothing is closed unless code exists behind it.",
+         [("46 open issues, 18 closed. Nothing is closed unless code exists behind it.",
            16, MUTED, False, 0)])
     footer(s, 9)
 
