@@ -63,8 +63,8 @@ store is in memory, so a cold start loses every decision — that is the thing t
 breaks first at 10×, it is issue #53, and the interface for the swap is already
 written in `lib/events.postgres.ts`. No auth, one tenant, no background workers.
 
-46 issues open across six milestones, 18 closed. Nothing is closed unless code
-exists behind it — where a stretch item did not get built I labelled it `cut`
+45 issues open across six milestones, plus #13 reopened in M0, against 18
+closed. Nothing is closed unless code exists behind it — where a stretch item did not get built I labelled it `cut`
 with a reason, and I reopened #13 rather than leave a skeleton marked done.
 
 ## Where to look
