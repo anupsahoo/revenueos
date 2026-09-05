@@ -41,6 +41,79 @@ instant a brief arrives, and measures reuse going up.
 - **Health is computed, not reported** — SLA state is derived from events, never typed in.
 - **Agents do the volume work; people decide** — the agent drafts and explains; a person commits.
 
+## Plan & tickets
+
+The whole assignment is planned as GitHub issues under the
+[**M1 · Brief→POC loop**](https://github.com/anupsahoo/revenueos/milestones) milestone —
+[closed = done, open = pending](https://github.com/anupsahoo/revenueos/issues?q=is%3Aissue).
+The core loop is complete; persistence and the stretch goals are the open tickets.
+
+## Architecture, end to end (pictorial)
+
+### High-level — request to answer
+
+```mermaid
+flowchart LR
+  subgraph B["🖥️ Control surface (one screen)"]
+    Q["Brief queue"] --> D["Draft + actions"]
+    D --> DEC{"Accept / Edit / Reject"}
+  end
+  B -- "POST /api/draft" --> API["/app/api/draft/"]
+  API --> G[["LangGraph agent"]]
+  subgraph G["🧠 lib/graph.ts"]
+    RET["retrieve"] --> DR["draft"] --> ASM["assemble"]
+  end
+  RET -. reads .-> LIB[("Template library<br/>lib/mock.ts")]
+  DR -->|Claude| LLM(("Anthropic<br/>claude-sonnet-5"))
+  DR -. no key .-> FB["Sample fallback"]
+  DEC -->|OS event| EV[["Event log<br/>health · reuse · ranking"]]
+  EV --> Q
+```
+
+### The loop — who does what
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant CRM as Won opportunity
+  participant UI as Control surface
+  participant GR as LangGraph agent
+  participant SA as Solution Architect
+  participant SEAM as Seam watcher
+  CRM->>UI: OS event (brief)
+  UI->>GR: retrieve + draft
+  GR->>GR: score templates (with reasons)
+  GR-->>UI: POC plan + handoff + matches
+  SA->>UI: accept / edit / reject
+  UI->>UI: OS event → reuse ↑, ranking learns
+  SEAM->>SEAM: age vs 2-day SLA (live)
+  SEAM-->>SA: breach → trigger (draft attached)
+```
+
+### Low-level — the agent state machine (`lib/graph.ts`)
+
+```mermaid
+stateDiagram-v2
+  [*] --> retrieve
+  retrieve --> draft: matches[]
+  draft --> assemble: plan (Claude or sample)
+  assemble --> [*]: + handoff skeleton
+```
+
+### Every file, and how it connects
+
+| File | Layer | Role | Business use case | Connects to |
+|---|---|---|---|---|
+| `app/page.tsx` | Frontend | The one control surface: queue, draft, decisions, seam health, logs | The screen a Solution Architect works from | → `app/api/draft`, `lib/mock`, `Visuals` |
+| `app/components/Visuals.tsx` | Frontend | Inline-SVG engine diagram, SLA gauge, sparkline, region bars | Makes the seam's health *visible*, not read | used by `page.tsx` |
+| `app/api/draft/route.ts` | API | Runs the agent for a brief | Turns a brief into an editable plan | → `lib/graph` |
+| `lib/graph.ts` | Backend (LangGraph) | State machine: retrieve → draft → assemble | The agent that does the volume work | → `lib/retrieval`, `ChatAnthropic`, `lib/mock` |
+| `lib/retrieval.ts` | Backend | Explainable scoring + learned boosts | "Reasons over knowledge" — why each template matches | reads `lib/mock` |
+| `lib/mock.ts` | Data | Synthetic briefs, template library, sample plans | The seam the real event store/DB replaces | imported everywhere |
+| `app/globals.css` | Frontend | Design tokens (light/dark) + components | Consistent, themeable control-room look | used by all UI |
+| `app/layout.tsx` | Frontend | App shell, fonts, metadata | — | wraps `page.tsx` |
+| `.github/workflows/release-deploy.yml` | Infra | Release → Vercel production deploy | Ship a version on demand | Vercel |
+
 ## Stack
 
 - **Next.js (App Router) + TypeScript**, deployed on **Vercel** — one repo, one control surface, API routes.
