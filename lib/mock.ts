@@ -1,6 +1,6 @@
 // Synthetic data for the RevenueOS control-surface prototype.
 // Everything here is fabricated. This module is the seam the backend replaces:
-// the same types will later be served by the event store + Claude agent.
+// the same types will later be served by the event store + AI agent.
 
 export type Region = "UK" | "US" | "India" | "Middle East";
 export type Segment = "Retail bank" | "Insurer" | "Capital markets" | "Lender";

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { BRIEFS } from "@/lib/mock";
 import { runBriefToPoc } from "@/lib/graph";
 
-// The LangGraph agent may call Claude, so allow generous time on Node runtime.
+// The agent may call an external AI model, so allow generous time on Node runtime.
 export const runtime = "nodejs";
 export const maxDuration = 60;
 

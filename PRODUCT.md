@@ -135,7 +135,7 @@ flowchart TB
   GW --> CFG["Config: Vertical Packs"]
   GW --> AGT["Agent platform<br/>per-vertical LangGraph · model routing · eval · tracing"]
   GW --> EVB["Event backbone (per-tenant, append-only = source of truth)"]
-  AGT --> LLM(("Anthropic Claude"))
+  AGT --> LLM(("AI model"))
   EVB --> DB[("Tenant-isolated store<br/>Neon / Postgres")]
   GW --> INT["Integrations: CRM · call-intel · enrichment"]
   INT --> EVB

@@ -31,7 +31,7 @@ Next.js App Router (one control surface at /)
 ├─ app/api/decisions     accept/edit/reject → new event → ranking + reuse update
 ├─ app/api/seam/health   compute brief age vs SLA → green/amber/red + breaches
 ├─ app/api/triggers      breach → trigger record (+ optional Slack/email webhook)
-├─ lib/agent             Claude tool-calling: retrieve_templates, draft_poc_plan
+├─ lib/agent             AI tool-calling: retrieve_templates, draft_poc_plan
 ├─ lib/retrieval         explainable scoring over the library (+ learned weights)
 ├─ lib/events            append-only event store behind one interface; everything derives from it
 └─ data/seed             solution templates (multi-region) + briefs — all synthetic
@@ -81,7 +81,7 @@ ranking improves over time.
 
 ## Decisions
 
-1. **Stack:** Next.js + TypeScript + Claude, deployed on Vercel. Event store
+1. **Stack:** Next.js + TypeScript + an AI model, deployed on Vercel. Event store
    in-memory now, Neon / Vercel Postgres for persistence.
 2. **Trigger delivery:** in-app trigger log (breach record with the draft
    attached, shown on the control surface).

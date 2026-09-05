@@ -68,7 +68,7 @@ flowchart LR
     RET["retrieve"] --> DR["draft"] --> ASM["assemble"]
   end
   RET -. reads .-> LIB[("Template library<br/>lib/mock.ts")]
-  DR -->|Claude| LLM(("Anthropic<br/>claude-sonnet-5"))
+  DR -->|AI| LLM(("AI model"))
   DR -. no key .-> FB["Sample fallback"]
   DEC -->|OS event| EV[["Event log<br/>health · reuse · ranking"]]
   EV --> Q
@@ -100,7 +100,7 @@ sequenceDiagram
 stateDiagram-v2
   [*] --> retrieve
   retrieve --> draft: matches[]
-  draft --> assemble: plan (Claude or sample)
+  draft --> assemble: plan (AI or sample)
   assemble --> [*]: + handoff skeleton
 ```
 
@@ -111,7 +111,7 @@ stateDiagram-v2
 | `app/page.tsx` | Frontend | The one control surface: queue, draft, decisions, seam health, logs | The screen a Solution Architect works from | → `app/api/draft`, `lib/mock`, `Visuals` |
 | `app/components/Visuals.tsx` | Frontend | Inline-SVG engine diagram, SLA gauge, sparkline, region bars | Makes the seam's health *visible*, not read | used by `page.tsx` |
 | `app/api/draft/route.ts` | API | Runs the agent for a brief | Turns a brief into an editable plan | → `lib/graph` |
-| `lib/graph.ts` | Backend (LangGraph) | State machine: retrieve → draft → assemble | The agent that does the volume work | → `lib/retrieval`, `ChatAnthropic`, `lib/mock` |
+| `lib/graph.ts` | Backend (LangGraph) | State machine: retrieve → draft → assemble | The agent that does the volume work | → `lib/retrieval`, AI model, `lib/mock` |
 | `lib/retrieval.ts` | Backend | Explainable scoring + learned boosts | "Reasons over knowledge" — why each template matches | reads `lib/mock` |
 | `lib/mock.ts` | Data | Synthetic briefs, template library, sample plans | The seam the real event store/DB replaces | imported everywhere |
 | `app/globals.css` | Frontend | Design tokens (light/dark) + components | Consistent, themeable control-room look | used by all UI |
@@ -121,7 +121,7 @@ stateDiagram-v2
 ## Stack
 
 - **Next.js (App Router) + TypeScript**, deployed on **Vercel** — one repo, one control surface, API routes.
-- **Anthropic Claude** agent (tool-calling) for retrieval-explanation + drafting.
+- **An AI model** (tool-calling) for retrieval-explanation + drafting.
 - **Append-only event store** behind one interface — in-memory + seed for demo/local (no accounts to run), swappable to **Neon / Vercel Postgres** for persistence.
 - **Explainable retrieval** over a seeded library that **learns from accept/reject**.
 
@@ -133,7 +133,7 @@ All data in this repo is synthetic.
 Working control surface with the agent wired in: explainable retrieval and POC
 drafting run behind the UI (`/api/draft`); seam health, reuse and triggers are
 computed live. The public demo drafts with a deterministic sample plan; set
-`ANTHROPIC_API_KEY` to draft with Claude. Persistent event store (Neon/Postgres)
+`ANTHROPIC_API_KEY` to draft with the AI model. Persistent event store (Neon/Postgres)
 is the next step — see [`PLAN.md`](PLAN.md).
 
 ## Deploy your own
@@ -141,7 +141,7 @@ is the next step — see [`PLAN.md`](PLAN.md).
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/anupsahoo/revenueos)
 
 Zero-config (Next.js). Optionally add `ANTHROPIC_API_KEY` (and
-`LLM_MODEL=claude-sonnet-5`) in project env vars to enable Claude drafting.
+`LLM_MODEL`) in project env vars to enable AI drafting.
 
 ## Run
 
@@ -151,7 +151,7 @@ npm run dev          # http://localhost:3000
 ```
 
 Runs with no configuration — POC drafting falls back to a deterministic sample
-plan. To draft with Claude, set an API key (see [`.env.example`](.env.example)):
+plan. To draft with the AI model, set an API key (see [`.env.example`](.env.example)):
 
 ```bash
 cp .env.example .env.local   # add ANTHROPIC_API_KEY

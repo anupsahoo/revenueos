@@ -3,8 +3,8 @@
 //   START ─▶ retrieve ─▶ draft ─▶ handoff ─▶ END
 //
 // - retrieve: explainable structured scoring over the template library.
-// - draft:    LangChain ChatAnthropic (Claude) writes the editable POC plan;
-//             deterministic sample fallback when no ANTHROPIC_API_KEY.
+// - draft:    an AI model writes the editable POC plan;
+//             deterministic sample fallback when the model is not configured.
 // - handoff:  assembles the Delivery handoff skeleton.
 //
 // Runs server-side only (imported from the /api/draft route).
@@ -15,7 +15,7 @@ import { SystemMessage, HumanMessage } from "@langchain/core/messages";
 import { retrieve } from "./retrieval";
 import { planFor, handoffSkeleton, templateById, type Brief, type PocPlan, type TemplateMatch } from "./mock";
 
-export type DraftSource = "claude" | "sample";
+export type DraftSource = "ai" | "sample";
 
 const SYSTEM = `You are a senior pre-sales Solution Architect at an enterprise software company that sells to banks and insurers. You turn a won-deal brief into a concrete, editable Proof-of-Concept (POC) plan a colleague could send to the customer with light edits.
 
@@ -98,10 +98,10 @@ async function retrieveNode(s: State): Promise<Partial<State>> {
 }
 
 async function draftNode(s: State): Promise<Partial<State>> {
-  if (!process.env.ANTHROPIC_API_KEY) {
+  const model = process.env.LLM_MODEL;
+  if (!process.env.ANTHROPIC_API_KEY || !model) {
     return { plan: planFor(s.brief), source: "sample", model: null };
   }
-  const model = process.env.LLM_MODEL || "claude-opus-5";
   try {
     const llm = new ChatAnthropic({ model, maxTokens: 4000 });
     const res = await llm.invoke([new SystemMessage(SYSTEM), new HumanMessage(userPrompt(s.brief, s.matches))]);
@@ -115,7 +115,7 @@ async function draftNode(s: State): Promise<Partial<State>> {
     text = text.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
     const plan = coercePlan(JSON.parse(text));
     if (!plan) return { plan: planFor(s.brief), source: "sample", model: null };
-    return { plan, source: "claude", model };
+    return { plan, source: "ai", model };
   } catch {
     return { plan: planFor(s.brief), source: "sample", model: null };
   }

@@ -23,7 +23,7 @@ interface DraftPayload {
   matches: TemplateMatch[];
   plan: PocPlan;
   handoff: { section: string; note: string }[];
-  source: "claude" | "sample";
+  source: "ai" | "sample";
   model: string | null;
 }
 
@@ -93,7 +93,7 @@ export default function ControlSurface() {
     pushEvent("breach", (<><b>SLA breach</b> · {b.account} · trigger → {SOLUTION_ARCHITECT} (draft attached)</>));
   }, [pushEvent]);
 
-  // Fetch a real draft from the agent (retrieval + Claude, or sample fallback).
+  // Fetch a real draft from the agent (retrieval + AI model, or sample fallback).
   const loadDraft = useCallback(async (briefId: string, force = false) => {
     if (!force && loadedRef.current.has(briefId)) return;
     loadedRef.current.add(briefId);
@@ -108,7 +108,7 @@ export default function ControlSurface() {
         const data: DraftPayload = await res.json();
         setDrafts((s) => ({ ...s, [briefId]: data }));
         const b = BRIEFS.find((x) => x.id === briefId);
-        pushEvent("draft", (<>Agent drafted POC plan · <b>{b?.account}</b> · {data.source === "claude" ? `Claude ${data.model}` : "sample"}</>));
+        pushEvent("draft", (<>Agent drafted POC plan · <b>{b?.account}</b> · {data.source === "ai" ? "AI" : "sample"}</>));
       } else {
         loadedRef.current.delete(briefId);
       }
@@ -297,7 +297,7 @@ export default function ControlSurface() {
               <div className="panel-head">
                 <h2>Draft POC plan {editMode && <span style={{ color: "var(--accent)", fontWeight: 600 }}>· editing</span>}</h2>
                 <span className="count">
-                  {loading ? "agent drafting…" : draft ? (draft.source === "claude" ? `drafted by Claude · ${draft.model}` : "sample draft · editable") : "editable"}
+                  {loading ? "agent drafting…" : draft ? (draft.source === "ai" ? "drafted by AI" : "sample draft · editable") : "editable"}
                 </span>
               </div>
               <div
@@ -390,7 +390,7 @@ export default function ControlSurface() {
         </div>
 
         <div className="footer-note">
-          Prototype · all data synthetic · seam health, reuse and triggers computed live from the event log · retrieval is explainable and learns from decisions · POC drafting runs on Claude when an API key is set, otherwise a sample draft.
+          Prototype · all data synthetic · seam health, reuse and triggers computed live from the event log · retrieval is explainable and learns from decisions · POC drafting runs on an AI model when configured, otherwise a sample draft.
         </div>
       </main>
     </div>
