@@ -1,8 +1,39 @@
 # STATUS — what is built vs what is claimed
 
-Phase 0 audit. Read-only. No code changed in this session. All data in the repo is synthetic and labelled synthetic.
+All data in the repo is synthetic and labelled synthetic.
 
-I checked the challenge in `docs/CHALLENGE.md` against the current code, the 64 GitHub issues, and the commit log. This is blunt on purpose.
+## Where it stands now (v0.2.0)
+
+The audit below was written **before** the work, and it is deliberately left
+unedited so the starting point is on the record. Every gap it found has since
+been closed. Here is the same list, answered:
+
+| Requirement | Then | Now |
+|---|---|---|
+| **R1 · Event in** | No event existed; briefs were static rows. | Briefs arrive as `brief.arrived` events. `lib/events.ts`, `lib/seed.ts` |
+| **R2 · Agent does the work** | Worked. Library was 8 templates, the minimum. | Still works; library is 15 templates across two regions. `lib/graph.ts` |
+| **R3 · A person decides** | Decisions lived in React state and died on refresh. | `draft.accepted` / `.edited` / `.rejected` events; boosts derived server-side and the client cannot set them. `app/api/decisions/route.ts` |
+| **R4 · Seam watches itself** | Age was a typed-in field. No trigger fired. | Age is business days computed from the arrival event; `sla.amber`, `sla.breached` and `trigger.fired` are appended idempotently, with the draft attached and a named owner. `lib/derive.ts`, `app/api/seam/health/route.ts` |
+| **R5 · One control surface** | Five screens; the loop was not the front door. | One screen at `/`. The others were deleted, not hidden. `app/page.tsx` |
+| **R6 · Built with AI** | No build log. | `docs/BUILD-LOG.md`, naming tools and models, plus `docs/TIME-LOG.md`. |
+
+Also fixed: the `83,534k` formatting defect died with the screen that carried it;
+the two disagreeing datasets are gone, leaving one synthetic set in `lib/mock.ts`;
+and the issues closed without code were reopened or relabelled `cut` — see the
+note in the README.
+
+**Still not true today:** the event store is in memory, so a cold start loses
+every decision ([#53](https://github.com/anupsahoo/revenueos/issues/53)); there is
+no auth and one tenant; and [#13](https://github.com/anupsahoo/revenueos/issues/13)
+is a handoff *skeleton*, not a generator, which is why it is open.
+
+---
+
+## The Phase 0 audit (unedited, for the record)
+
+Read-only. No code changed in that session.
+
+I checked the requirements in `docs/PROBLEM.md` against the code as it stood, the GitHub issues and the commit log. This is blunt on purpose.
 
 ## Snapshot
 - Repo has one API route: `app/api/draft/route.ts`. Nothing else under `app/api`.
@@ -38,12 +69,12 @@ I checked the challenge in `docs/CHALLENGE.md` against the current code, the 64 
 ### R5 — One control surface
 - **Claimed:** one screen with the brief queue, seam health, current draft, trigger log, and actions.
 - **Actual:** `/operator` (`app/operator/page.tsx`) is a real, actionable screen: searchable project and brief browser, brief detail, retrieved templates, editable draft, accept/edit/reject, an SLA gauge. But it is not the front door, it has no trigger log, and the app is spread across five screens (`/`, `/sales`, `/presales`, `/onboarding`, `/operator`).
-- **Gap:** the loop screen is good and actionable, but R5 wants one control surface with the trigger log on it. The challenge explicitly warns that breadth scores worse than one deep loop.
+- **Gap:** the loop screen is good and actionable, but R5 wants one control surface with the trigger log on it. Breadth is worse than one deep loop, and this is currently breadth.
 
 ### R6 — Built with AI
-- **Claimed:** README and PRODUCT describe the AI build (wording is vendor-neutral by standing decision).
+- **Claimed:** README and PRODUCT describe the AI build (wording is vendor-neutral by standing decision, except in the build log).
 - **Actual:** commit history is intact and shows an incremental build. Messages are plain and vendor-neutral, so the AI method is not visible in the commits. There is no `docs/BUILD-LOG.md`. `docs/TIME-LOG.md` starts this session. Note for the record: the commit history was rewritten once earlier to remove vendor names, before these honesty rules applied; from here it is append-only.
-- **Gap:** R6 wants the method visible in commits and a build log that names the tools and models. The build log does not exist yet. It is the rule-7 exception where tools and models must be named.
+- **Gap:** R6 wants the method visible in commits and a build log that names the tools and models. The build log does not exist yet. It is the one place where tools and models must be named.
 
 ## The five prior-audit findings
 
@@ -58,9 +89,9 @@ I checked the challenge in `docs/CHALLENGE.md` against the current code, the 64 
 - **`People` number is wrong and not event-derived.** `app/page.tsx:24` renders `` `${(TOTALS.people / 1000).toFixed(0)}k` ``. `TOTALS.people` is a sum over the 2,025-company set (`lib/dataset.ts:64`), roughly 83 million, so it prints like `83534k`. It should read about `83.5M`. It also breaks rule 4: I cannot point at an event-log query that produces it.
 - **Datasets disagree.** `/` claims 2,025 companies; `/operator` shows 12. Same product, two numbers.
 
-## Marks at risk
+## Where the risk was
 
-| Requirement | Weight | Marks at risk now | Fix phase |
+| Requirement | Weight in the design | What was at risk | Fixed in |
 |---|---|---|---|
 | R6 Built with AI | 35% | Build log missing; method not visible in the clean commits | Phase 6 (build log, names tools/models) |
 | R2 Agent does the work | 30% | Low risk; drafting works. Risk is slow/fallback drafting and a minimum-size library | Phase 3 (harden drafting, widen library) |

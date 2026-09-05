@@ -6,7 +6,24 @@ by team — retail today, banking tomorrow, healthcare the day after.
 
 > Planned as GitHub issues: [**milestones M0–M6**](https://github.com/anupsahoo/revenueos/milestones)
 > · [**epics**](https://github.com/anupsahoo/revenueos/issues?q=is%3Aissue+is%3Aopen+label%3Aepic)
-> · M0 = the shipped prototype, M1–M6 = the enterprise build.
+
+---
+
+## ⚠️ What exists today, and what this document is
+
+**Everything below this line is a plan, not a product.** Read it as the shape I
+would build toward, not as a description of running software.
+
+| | |
+|---|---|
+| **Shipped (M0, v0.2.0)** | One screen: the Sales → PreSales operator loop, on an append-only event log, single tenant, synthetic data. 18 issues closed. That is all of it. |
+| **Planned (M1–M6)** | Everything on this page — multi-tenancy, onboarding journeys, vertical packs, the director cockpits, the agent platform. 45 open issues. No code. |
+
+There is no auth, no second tenant, no cockpit and no vertical pack in the repo
+today. The diagrams here are how the shipped loop would generalise, drawn so the
+sequencing and the dependencies are arguable before anyone writes the code.
+What is actually built is in [`docs/STATUS.md`](docs/STATUS.md); what I chose not
+to build is in [`docs/CUT-LIST.md`](docs/CUT-LIST.md).
 
 ---
 

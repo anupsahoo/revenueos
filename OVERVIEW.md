@@ -1,4 +1,4 @@
-# RevenueOS — submission
+# RevenueOS — overview
 
 One seam, closed end to end.
 
@@ -71,7 +71,7 @@ with a reason, and I reopened #13 rather than leave a skeleton marked done.
 
 | | |
 |---|---|
-| The problem I chose and why | [docs/CHALLENGE.md](docs/CHALLENGE.md) |
+| The problem this is built against | [docs/PROBLEM.md](docs/PROBLEM.md) |
 | What is built vs. what is claimed | [docs/STATUS.md](docs/STATUS.md) |
 | Decisions and what each one cost | [docs/DECISIONS.md](docs/DECISIONS.md) |
 | Twelve weeks against real issues | [docs/ROADMAP.md](docs/ROADMAP.md) |
@@ -81,7 +81,7 @@ with a reason, and I reopened #13 rather than leave a skeleton marked done.
 | Honest build time | [docs/TIME-LOG.md](docs/TIME-LOG.md) |
 | The grounded chat, in detail | [docs/ASK-THE-SEAM.md](docs/ASK-THE-SEAM.md) |
 | Eight-minute demo, timed | [docs/DEMO-SCRIPT.md](docs/DEMO-SCRIPT.md) |
-| Twelve questions, honest answers | [docs/QA-PREP.md](docs/QA-PREP.md) |
+| Twelve questions, honest answers | [docs/QUESTIONS.md](docs/QUESTIONS.md) |
 | Ten slides | [docs/slides/](docs/slides/) |
 
 ## Run it

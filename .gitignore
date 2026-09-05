@@ -33,3 +33,9 @@ npm-debug.log*
 .turbo/
 coverage/
 .vercel
+
+# Local reference material — never commit these to the public repo
+Engineering_Challenge_Candidate*.pdf
+Operator Spec*.html
+*.docx
+docs/CHALLENGE.md

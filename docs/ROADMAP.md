@@ -4,7 +4,8 @@ Twelve weeks, one engineer, AI agents doing most of the typing. Issue numbers
 below are the live ones in this repo. I have not invented tickets and I have not
 renumbered anything.
 
-> `[ANUP]` markers: **the four-week cut** (confirm you agree with what I would drop first).
+> `[ANUP]` The four-week cut at the bottom is the one judgement call here. It is
+> argued rather than asserted — check you would drop the same things first.
 
 ## Dependencies, and one thing out of order
 
@@ -54,7 +55,7 @@ invent them.
 
 ## If I lost four weeks
 
-I would drop S5 and S6 and ship S1 to S4. `[ANUP: confirm]`
+I would drop S5 and S6 and ship S1 to S4.
 
 Concretely: cut the cockpits (#44, #45, #46, #47) and the extra vertical packs
 (#40, #42), and keep #51 by pulling it forward into S4. The loop with a durable

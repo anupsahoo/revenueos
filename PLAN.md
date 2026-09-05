@@ -4,6 +4,11 @@ The system is one loop, built depth-first. Not a dashboard, not five screens —
 one control surface where a brief becomes an editable POC plan, a person decides,
 and the seam watches itself.
 
+> This was written before the build and is kept as the plan of record. Where the
+> shipped code diverged, the architecture block below says so. What actually
+> exists today is in [`docs/STATUS.md`](docs/STATUS.md); why each choice was made
+> is in [`docs/DECISIONS.md`](docs/DECISIONS.md).
+
 ## Capabilities
 
 - **Event in** — a won opportunity arrives as an `OS event` carrying a brief,
@@ -26,16 +31,27 @@ and the seam watches itself.
 
 ```
 Next.js App Router (one control surface at /)
-├─ app/api/events        append + read OS events (append-only log = source of truth)
-├─ app/api/agent/draft   agent run: retrieve → explain → draft POC plan + handoff
-├─ app/api/decisions     accept/edit/reject → new event → ranking + reuse update
-├─ app/api/seam/health   compute brief age vs SLA → green/amber/red + breaches
-├─ app/api/triggers      breach → trigger record (+ optional Slack/email webhook)
-├─ lib/agent             AI tool-calling: retrieve_templates, draft_poc_plan
-├─ lib/retrieval         explainable scoring over the library (+ learned weights)
-├─ lib/events            append-only event store behind one interface; everything derives from it
-└─ data/seed             solution templates (multi-region) + briefs — all synthetic
+├─ app/api/events            read the OS event log (append-only = source of truth)
+├─ app/api/draft             agent run: retrieve → explain → draft POC plan + handoff
+├─ app/api/decisions         accept/edit/reject → new event → ranking + reuse update
+├─ app/api/seam/health       brief age vs SLA → green/amber/red, and appends the
+│                            amber/breach/trigger events when a threshold is crossed
+├─ app/api/ask               "Ask the seam": six read-only tools over the log and docs
+├─ lib/graph                 LangGraph agent: retrieve → draft → assemble
+├─ lib/retrieval             explainable scoring over the library (+ learned boosts)
+├─ lib/events                append-only event store behind one interface
+├─ lib/derive                pure functions: age, status, queue, reuse, boosts, triggers
+├─ lib/seed                  synthetic briefs → arrival events
+└─ lib/mock                  solution templates (multi-region) + briefs — all synthetic
 ```
+
+**Three things came out differently.** `lib/agent` became `lib/graph.ts` when the
+agent moved to a LangGraph state machine. There is no separate `app/api/triggers`
+route: triggers are appended by `/api/seam/health` when it detects a threshold
+crossing, so the seam writes its own escalations rather than being told to. And
+`app/api/ask` was not in this plan at all — it was added once it became clear the
+screen needed to answer "why did it pick that template?" without a person reading
+the code. The rest shipped as written.
 
 **Event-sourced by design.** Health, reuse rate, and rankings are *computed* from
 the event log, never entered — so "health is computed, not reported" holds by
@@ -64,12 +80,19 @@ ranking improves over time.
 
 ## Roadmap (depth-first, value first)
 
-1. Scaffold, event store, seed library + briefs (synthetic).
-2. Agent: retrieve + explain + draft POC plan & handoff skeleton.
-3. One control surface: queue, current draft, actions.
-4. Decisions loop: accept/edit/reject → events → reuse + ranking learn.
-5. Seam health computed + trigger on breach with draft attached.
-6. End-to-end polish of the loop.
+All six shipped in v0.2.0. Steps 4 and 5 were the ones that needed a second pass:
+decisions and health were client-side first, and only became real once every
+number was derived from the event log instead of held in React state.
+
+1. ✅ Scaffold, event store, seed library + briefs (synthetic).
+2. ✅ Agent: retrieve + explain + draft POC plan & handoff skeleton.
+3. ✅ One control surface: queue, current draft, actions.
+4. ✅ Decisions loop: accept/edit/reject → events → reuse + ranking learn.
+5. ✅ Seam health computed + trigger on breach with draft attached.
+6. ✅ End-to-end polish of the loop.
+
+What comes next is the enterprise build, planned as M1–M6 in
+[`PRODUCT.md`](PRODUCT.md) and sequenced in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Design principles
 

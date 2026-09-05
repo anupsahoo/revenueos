@@ -1,7 +1,7 @@
 # Ask the seam
 
 A chat box on the operator screen that answers questions about **this running
-instance**. It is there because the panel will ask "why did it pick that
+instance**. It is there because someone will always ask "why did it pick that
 template?", "what happens if I refresh?", "what breaks at 10x?" — and I would
 rather demonstrate the answer than assert it.
 

@@ -16,7 +16,15 @@ export async function GET() {
   return NextResponse.json({ keyed: keyed() });
 }
 
-const DOCS = ["README.md", "PLAN.md", "PRODUCT.md", "docs/DECISIONS.md", "docs/CUT-LIST.md", "docs/BUILD-LOG.md", "docs/ROADMAP.md"];
+// Allow-list. read_doc will not open anything outside this, so the chat cannot be
+// talked into reading source, env files or the local reference material.
+const DOCS = [
+  "README.md", "OVERVIEW.md", "PLAN.md", "PRODUCT.md",
+  "docs/PROBLEM.md", "docs/STATUS.md", "docs/DECISIONS.md", "docs/CUT-LIST.md",
+  "docs/BUILD-LOG.md", "docs/ROADMAP.md", "docs/THE-DECISION.md",
+  "docs/IC-OPERATING-MODEL.md", "docs/QUESTIONS.md", "docs/ASK-THE-SEAM.md",
+  "docs/TIME-LOG.md", "docs/DEMO-SCRIPT.md",
+];
 
 const SYSTEM = `You answer questions about one running RevenueOS instance. Use only the tools. Cite the event ids or file names you used. Format: answer in 4 short sentences or fewer, then a line starting "Also:" with one adjacent fact from the same tool results that the person did not ask for but would want. If the tools do not contain the answer, say so in one sentence and name what would be needed. Never invent events, numbers, or template ids.`;
 

@@ -1,7 +1,8 @@
-# Q&A preparation
+# Questions people ask
 
-Twelve questions I expect, the honest answer, and where it lives in the code.
-The "break something" ones are first, because those come first.
+Twelve questions I expect about this system, the honest answer to each, and
+where in the code it lives. The "break something" ones are first, because those
+are the ones that come first.
 
 ### 1. I press Accept and refresh. What happens?
 The decision is still there. It is a `draft.accepted` event in the log, not
