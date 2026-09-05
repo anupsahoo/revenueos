@@ -1,0 +1,290 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>RevenueOS</title>
+<!--
+  Print source for docs/slides/RevenueOS.pdf. Same ten slides and same palette as
+  RevenueOS.pptx. Regenerate the PDF with:
+      docs/slides/build_pdf.sh
+-->
+<style>
+  :root{
+    --ink:#1c162e; --muted:#6b6482; --accent:#6d28d9; --soft:#ede7fb;
+    --deep:#3b0f76; --paper:#faf9fc; --line:#ddd8ea;
+    --green:#15803d; --amber:#b45309; --red:#b91c1c;
+  }
+  @page{ size:13.333in 7.5in; margin:0; }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{ font:16px/1.45 "Helvetica Neue",Helvetica,Arial,sans-serif; color:var(--ink); }
+  .slide{
+    width:13.333in; height:7.5in; padding:.62in .95in .8in; background:var(--paper);
+    position:relative; page-break-after:always; overflow:hidden;
+    display:flex; flex-direction:column;
+  }
+  /* everything after the kicker is centred in the space that is left, so a slide
+     never leaves a dead third at the bottom */
+  .body{ flex:1; display:flex; flex-direction:column; justify-content:center; }
+  .slide:last-child{ page-break-after:auto; }
+  .dark{ background:var(--deep); color:#fff; }
+  .dark::before{ content:""; position:absolute; left:0; top:0; bottom:0; width:.35in; background:var(--accent); }
+  h1{ font-size:60px; letter-spacing:-1px; margin-bottom:10px; }
+  h2{ font-size:30px; letter-spacing:-.3px; }
+  .head{ display:flex; gap:14px; align-items:flex-start; margin-bottom:6px; }
+  .bar{ width:7px; height:38px; background:var(--accent); flex:0 0 auto; margin-top:4px; }
+  .kicker{ color:var(--muted); font-size:14px; margin:6px 0 0 21px; }
+  .num{ position:absolute; right:.7in; bottom:.5in; color:var(--muted); font-size:11px; }
+  .chain{ display:flex; align-items:center; gap:6px; }
+  .node{ flex:1; border:1.5px solid var(--line); background:#fff; border-radius:10px;
+         padding:16px 8px; text-align:center; font-size:15px; }
+  .node.on{ background:var(--accent); border-color:var(--accent); color:#fff; font-weight:700; }
+  .arrow{ color:var(--accent); font-size:20px; flex:0 0 auto; }
+  .stall{ margin:8px 0 0 0; text-align:center; color:var(--red); font-size:12px; font-weight:700; }
+  .stats{ display:flex; gap:18px; margin-top:40px; }
+  .stat{ flex:1; border:1.5px solid var(--line); background:#fff; border-radius:12px;
+         padding:22px 10px; text-align:center; }
+  .stat b{ display:block; font-size:34px; letter-spacing:-.5px; }
+  .stat span{ color:var(--muted); font-size:13px; }
+  .punch{ margin-top:38px; font-size:19px; font-weight:700; }
+  .loop{ display:flex; align-items:center; gap:6px; margin-top:26px; }
+  .lnode{ flex:1; border:1.5px solid var(--accent); background:var(--soft); border-radius:12px;
+          padding:24px 8px; text-align:center; font-size:15px; font-weight:700; min-height:1.5in;
+          display:flex; align-items:center; justify-content:center; }
+  .lnode.human{ background:var(--accent); color:#fff; border-color:var(--accent); }
+  .feedback{ margin-top:14px; border-top:2px dashed #b9a6ee; padding-top:8px;
+             text-align:center; color:var(--muted); font-size:13px; }
+  .split{ display:flex; gap:24px; align-items:stretch; margin-top:26px; }
+  .logbox{ flex:0 0 3.6in; background:var(--accent); color:#fff; border-radius:12px; padding:26px 22px; }
+  .logbox b{ display:block; font-size:18px; margin-bottom:14px; }
+  .logbox code{ display:block; font:13px/1.9 ui-monospace,Menlo,monospace; color:#e5dcfb; }
+  .derived{ flex:1; display:flex; flex-direction:column; gap:10px; justify-content:center; }
+  .drow{ border:1.5px solid var(--line); background:#fff; border-radius:9px; padding:12px 16px; font-size:14px; }
+  .note{ margin-top:26px; color:var(--accent); font-size:17px; font-weight:700; }
+  .scores{ display:flex; gap:26px; margin-top:22px; }
+  .stable{ flex:1; display:flex; flex-direction:column; gap:8px; }
+  .srow{ display:flex; gap:10px; }
+  .sname{ flex:1; border:1.5px solid var(--line); background:#fff; border-radius:8px; padding:10px 14px; font-size:14px; }
+  .spts{ flex:0 0 1in; border:1.5px solid var(--accent); background:var(--soft); border-radius:8px;
+         padding:10px; text-align:center; font-size:14px; font-weight:700; color:var(--deep); }
+  .aside{ flex:0 0 4in; }
+  .thresh{ border:1.5px solid var(--accent); background:var(--soft); border-radius:12px;
+           padding:22px; color:var(--deep); font-size:16px; line-height:1.6; }
+  .aside p{ margin-top:18px; font-size:15px; font-weight:700; }
+  .aside small{ display:block; margin-top:10px; color:var(--muted); font-size:13px; font-weight:400; }
+  .nodes3{ display:flex; align-items:center; gap:6px; margin-top:26px; }
+  .n3{ flex:1; border:1.5px solid var(--accent); background:#fff; border-radius:12px;
+       padding:22px 14px; text-align:center; min-height:1.9in; display:flex;
+       flex-direction:column; justify-content:center; }
+  .n3 b{ font-size:22px; color:var(--accent); }
+  .n3 span{ margin-top:10px; color:var(--muted); font-size:13px; }
+  .band{ margin-top:24px; border:1.5px solid var(--accent); background:var(--soft);
+         border-radius:12px; padding:18px 22px; color:var(--deep); font-size:15px; text-align:center; }
+  .band.solid{ background:var(--accent); color:#fff; border-color:var(--accent); }
+  .band.plain{ background:#fff; border-color:var(--line); color:var(--muted); }
+  .tools{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:26px; }
+  .tool{ border:1.5px solid var(--accent); background:#fff; border-radius:10px; padding:14px;
+         text-align:center; font:15px ui-monospace,Menlo,monospace; font-weight:700; color:var(--deep); }
+  .two{ display:flex; gap:22px; margin-top:24px; }
+  .card{ flex:1; border:1.5px solid var(--line); background:#fff; border-radius:12px; padding:22px 26px; }
+  .card h3{ font-size:20px; margin-bottom:14px; }
+  .card li{ list-style:none; font-size:15px; margin-bottom:11px; }
+  .learn{ display:flex; gap:22px; margin-top:26px; }
+  .lcard{ flex:1; border:1.5px solid; border-radius:12px; background:#fff; padding:26px;
+          text-align:center; font-size:18px; font-weight:700; }
+  .foot{ margin-top:22px; color:var(--muted); font-size:16px; }
+  .dark .sub{ color:#c9b8f5; font-size:26px; }
+  .dark .lede{ color:#ddd3f8; font-size:17px; margin-top:26px; line-height:1.7; }
+  .dark .big{ color:#c9b8f5; font-size:44px; font-weight:700; margin:22px 0 18px; }
+  .dark .link{ position:absolute; left:1.2in; bottom:.7in; color:#b9a6ee; font-size:14px; }
+</style>
+
+<!-- 1 -->
+<section class="slide dark" style="padding-left:1.2in">
+  <div style="margin-top:2in">
+    <h1>RevenueOS</h1>
+    <p class="sub">One seam, closed end to end.</p>
+    <p class="lede">Sales wins a deal. PreSales has two business days to start the POC plan.<br>
+      In the US it takes 6.8. This is the loop that closes the gap.</p>
+  </div>
+</section>
+
+<!-- 2 -->
+<section class="slide">
+  <div class="head"><div class="bar"></div><h2>The seam</h2></div>
+  <p class="kicker">Marketing → Sales → PreSales → Delivery → Support. It stalls at one join.</p>
+  <div class="body">
+    <div class="chain">
+      <div class="node">Marketing</div><div class="arrow">→</div>
+      <div class="node">Sales</div><div class="arrow">→</div>
+      <div class="node on">PreSales</div><div class="arrow">→</div>
+      <div class="node">Delivery</div><div class="arrow">→</div>
+      <div class="node">Support</div>
+    </div>
+    <p class="stall">▲ the stall</p>
+    <div class="stats">
+      <div class="stat"><b style="color:var(--accent)">2 days</b><span>the SLA</span></div>
+      <div class="stat"><b style="color:var(--red)">6.8 days</b><span>US actual</span></div>
+      <div class="stat"><b style="color:var(--red)">21%</b><span>US reuse</span></div>
+      <div class="stat"><b style="color:var(--green)">58% / 55%</b><span>UK / India reuse</span></div>
+    </div>
+    <p class="punch">Not a headcount problem. The templates already exist — nothing fetches them.</p>
+  </div>
+  <div class="num">2</div>
+</section>
+
+<!-- 3 -->
+<section class="slide">
+  <div class="head"><div class="bar"></div><h2>The loop</h2></div>
+  <p class="kicker">Five steps. One screen. The human presses the last button.</p>
+  <div class="body">
+    <div class="loop">
+      <div class="lnode">Brief<br>arrives</div><div class="arrow">→</div>
+      <div class="lnode">Retrieve<br>3 matches</div><div class="arrow">→</div>
+      <div class="lnode">Draft<br>POC plan</div><div class="arrow">→</div>
+      <div class="lnode human">Human<br>accepts</div><div class="arrow">→</div>
+      <div class="lnode">Library<br>re-ranks</div>
+    </div>
+    <p class="feedback">↺ every decision changes the next retrieval</p>
+    <p class="punch">Automated up to the commitment. The commitment stays with a named human.</p>
+  </div>
+  <div class="num">3</div>
+</section>
+
+<!-- 4 -->
+<section class="slide">
+  <div class="head"><div class="bar"></div><h2>One source of truth</h2></div>
+  <p class="kicker">Nothing on the screen is stored. Every number is derived from an append-only log.</p>
+  <div class="body">
+  <div class="split">
+    <div class="logbox">
+      <b>Event log</b>
+      <code>brief.arrived<br>draft.generated<br>draft.accepted<br>draft.rejected<br>sla.breached<br>trigger.fired</code>
+    </div>
+    <div class="derived">
+      <div class="drow">age → business days since arrival</div>
+      <div class="drow">status → green / amber / red</div>
+      <div class="drow">reuse rate → accepted ÷ decided</div>
+      <div class="drow">boosts → ±8 per decision</div>
+      <div class="drow">triggers → who was escalated</div>
+    </div>
+  </div>
+  <p class="note">Every number on screen has an ⓘ that shows the query behind it.
+    If it cannot, it does not go on the screen.</p>
+  </div>
+  <div class="num">4</div>
+</section>
+
+<!-- 5 -->
+<section class="slide">
+  <div class="head"><div class="bar"></div><h2>Retrieval you can argue with</h2></div>
+  <p class="kicker">A score a Solution Architect can push back on beats a similarity number they cannot.</p>
+  <div class="body">
+  <div class="scores">
+    <div class="stable">
+      <div class="srow"><div class="sname">Same segment</div><div class="spts">30</div></div>
+      <div class="srow"><div class="sname">Same regulator / analogue</div><div class="spts">16 / 8</div></div>
+      <div class="srow"><div class="sname">Problem overlap</div><div class="spts">≤ 26</div></div>
+      <div class="srow"><div class="sname">Systems overlap</div><div class="spts">≤ 18</div></div>
+      <div class="srow"><div class="sname">Recently used</div><div class="spts">5</div></div>
+      <div class="srow"><div class="sname">Proven reuse</div><div class="spts">4</div></div>
+      <div class="srow"><div class="sname">Learned from decisions</div><div class="spts">± 8</div></div>
+    </div>
+    <div class="aside">
+      <div class="thresh"><b>Threshold 40</b><br>Nothing below it is shown.<br>No match = the plan says so.</div>
+      <p>Each match ships the reasons it fits, in words.
+        <small>At ~200 templates I put embeddings in front for recall and keep this for the explanation.</small></p>
+    </div>
+  </div>
+  </div>
+  <div class="num">5</div>
+</section>
+
+<!-- 6 -->
+<section class="slide">
+  <div class="head"><div class="bar"></div><h2>The agent</h2></div>
+  <p class="kicker">Three nodes, one job. It drafts; it does not decide.</p>
+  <div class="body">
+  <div class="nodes3">
+    <div class="n3"><b>retrieve</b><span>score the library,<br>keep the reasons</span></div><div class="arrow">→</div>
+    <div class="n3"><b>draft</b><span>write the POC plan<br>from the matches</span></div><div class="arrow">→</div>
+    <div class="n3"><b>assemble</b><span>plan + handoff +<br>what it used</span></div>
+  </div>
+  <div class="band">If the model is slow or unavailable, it falls back to a deterministic plan —
+    and the screen says “sample draft” instead of “drafted by AI model”.</div>
+  <p class="punch">The demo never dies, and it never pretends.</p>
+  </div>
+  <div class="num">6</div>
+</section>
+
+<!-- 7 -->
+<section class="slide">
+  <div class="head"><div class="bar"></div><h2>Ask the seam</h2></div>
+  <p class="kicker">A chat box with no memory and six read-only tools.</p>
+  <div class="body">
+  <div class="tools">
+    <div class="tool">get_events</div><div class="tool">get_health</div><div class="tool">get_brief</div>
+    <div class="tool">get_template</div><div class="tool">explain_match</div><div class="tool">read_doc</div>
+  </div>
+  <div class="band solid">“Which briefs are past SLA right now and who was triggered?”
+    → answers from the log, and names the sources it read.</div>
+  <div class="band plain">“What is the weather in Mumbai?” → refuses in one sentence.
+    No tool holds it, so there is no answer.</div>
+  </div>
+  <div class="num">7</div>
+</section>
+
+<!-- 8 -->
+<section class="slide">
+  <div class="head"><div class="bar"></div><h2>It learns from the decision, not from a rating</h2></div>
+  <p class="kicker">No feedback form. The button is the signal.</p>
+  <div class="body">
+  <div class="learn">
+    <div class="lcard" style="border-color:var(--green);color:var(--green)">Accept → + 8 to every template that draft used</div>
+    <div class="lcard" style="border-color:var(--red);color:var(--red)">Reject → − 8 to every template that draft used</div>
+  </div>
+  <div class="band">Boosts are derived from the event log — the server reads them itself
+    and ignores anything the browser sends.</div>
+  <p class="punch">Refresh the page and the decision is still there. It was never browser state.</p>
+  </div>
+  <div class="num">8</div>
+</section>
+
+<!-- 9 -->
+<section class="slide">
+  <div class="head"><div class="bar"></div><h2>What is real, and what breaks first</h2></div>
+  <p class="kicker">Said before anyone has to ask.</p>
+  <div class="body">
+  <div class="two">
+    <div class="card">
+      <h3 style="color:var(--green)">Real</h3>
+      <ul>
+        <li>Event log, derive functions, tests</li>
+        <li>Retrieval scoring and its reasons</li>
+        <li>The agent, the tools, the refusals</li>
+        <li>SLA breach detection and escalation</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="color:var(--amber)">Not real yet</h3>
+      <ul>
+        <li>Data is synthetic and labelled on screen</li>
+        <li>Store is in memory — a cold start loses it</li>
+        <li>No auth, one tenant, no workers</li>
+        <li>Breaks first at 10×: the store (#53)</li>
+      </ul>
+    </div>
+  </div>
+  <p class="foot">48 open issues across six milestones. Nothing is closed unless code exists behind it.</p>
+  </div>
+  <div class="num">9</div>
+</section>
+
+<!-- 10 -->
+<section class="slide dark" style="padding-left:1.2in">
+  <div style="margin-top:1.5in">
+    <h2 style="color:#fff">The one thing I would never hand to the agent</h2>
+    <p class="big">The accept.</p>
+    <p class="lede" style="margin-top:0">Pressing Accept is not a document being finished. It is a promise to a
+      customer about what we will prove, in how many weeks, under their regulator.<br><br>
+      The person who makes that promise has to be the person who will be in the room when it slips.</p>
+  </div>
+  <p class="link">github.com/anupsahoo/revenueos · revenueos-blond.vercel.app</p>
+</section>
