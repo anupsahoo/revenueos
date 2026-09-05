@@ -16,7 +16,7 @@ would build toward, not as a description of running software.
 
 | | |
 |---|---|
-| **Shipped (M0, v0.2.0)** | One screen: the Sales → PreSales operator loop, on an append-only event log, single tenant, synthetic data. 18 issues closed. That is all of it. |
+| **Shipped (M0)** | One screen: the Sales → PreSales operator loop, on an append-only event log, single tenant, synthetic data. 18 issues closed. That is all of it. |
 | **Planned (M1–M6)** | Everything on this page — multi-tenancy, onboarding journeys, vertical packs, the director cockpits, the agent platform. 45 open issues. No code. |
 
 There is no auth, no second tenant, no cockpit and no vertical pack in the repo

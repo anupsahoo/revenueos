@@ -2,7 +2,7 @@
 
 All data in the repo is synthetic and labelled synthetic.
 
-## Where it stands now (v0.2.0)
+## Where it stands now
 
 The audit below was written **before** the work, and it is deliberately left
 unedited so the starting point is on the record. Every gap it found has since
@@ -73,7 +73,7 @@ I checked the requirements in `docs/PROBLEM.md` against the code as it stood, th
 
 ### R6 — Built with AI
 - **Claimed:** README and PRODUCT describe the AI build (wording is vendor-neutral by standing decision, except in the build log).
-- **Actual:** commit history is intact and shows an incremental build. Messages are plain and vendor-neutral, so the AI method is not visible in the commits. There is no `docs/BUILD-LOG.md`. `docs/TIME-LOG.md` starts this session. Note for the record: the commit history was rewritten once earlier to remove vendor names, before these honesty rules applied; from here it is append-only.
+- **Actual:** commit history is intact and shows an incremental build. Messages are plain and vendor-neutral, so the AI method is not visible in the commits. There is no `docs/BUILD-LOG.md`. `docs/TIME-LOG.md` starts this session. Note for the record: the commit history was rewritten once earlier to remove vendor names, before these honesty rules applied; from here it is append-only. *(Later addendum: it was rewritten once more at the end, to purge reference material that should not have been in a public repo. Both rewrites are recorded in `docs/BUILD-LOG.md`.)*
 - **Gap:** R6 wants the method visible in commits and a build log that names the tools and models. The build log does not exist yet. It is the one place where tools and models must be named.
 
 ## The five prior-audit findings

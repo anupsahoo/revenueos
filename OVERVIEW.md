@@ -4,7 +4,7 @@ One seam, closed end to end.
 
 **Live:** https://revenueos-blond.vercel.app
 **Repo:** https://github.com/anupsahoo/revenueos
-**Version:** v0.2.0
+**Version:** v0.2.1
 
 ---
 

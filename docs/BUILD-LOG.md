@@ -75,7 +75,14 @@ reading an AI draft or the fallback.
 - **Client-side decisions and a static `ageDays` field.** The first screen kept decisions in React state and read a seeded age. A refresh forgot everything and no number could name its source. Both are gone: decisions are events, age is computed from the arrival event.
 - **An entire multi-screen version.** A portfolio command centre, a sales cockpit, a pre-sales cockpit, onboarding screens, a Recharts chart kit and a generated dataset of 2,025 companies and about 5,000 projects (323 KB). Deleted. Five screens at thirty percent is worse than one loop at ninety, and those screens implied capability I had not built. The `recharts` and `zod` dependencies went with them once nothing imported them.
 - **`lib/agent.ts`**, superseded by the LangGraph version in `lib/graph.ts`.
-- For the record: the commit history was rewritten once, early on, to take vendor names out of the messages. That happened before I set the no-rewrite rule. From that point the history is append-only and nothing has been amended.
+- For the record, the commit history has been rewritten twice, and only twice.
+  Once early on, to take vendor names out of the commit messages, before I set
+  the no-rewrite rule. Once at the end, to purge reference material that should
+  never have been committed to a public repository — that one is described in
+  section 4. Both were removals of content that should not have been there, not
+  edits to the record of what happened. No commit has been amended, backdated or
+  reworded to make the build look tidier than it was, and the second rewrite
+  dropped no commits: 31 before, 31 after, same subjects.
 
 ## 6. Time
 
@@ -83,7 +90,7 @@ From `docs/TIME-LOG.md`, not rounded in my favour.
 
 | Who | Recorded |
 |---|---|
-| AI coding assistant (Claude Code) | about **6h30** across the audit, the event log, the grounded chat, the design and assessment docs, the deck and the release |
+| AI coding assistant (Claude Code) | about **8h00** across the audit, the event log, the grounded chat, the design docs, the deck, the releases and the documentation pass |
 | Anup | `[ANUP]` your own hours — I have not estimated them for you |
 
 The totals row in `docs/TIME-LOG.md` is the honest answer to "how long did it
