@@ -52,6 +52,14 @@ cockpits, onboarding journeys, 40k users) is planned as
 tenancy, company/system/user onboarding journeys, vertical packs, the
 multi-tenant architecture, and the two director cockpits.
 
+M0 issues labelled [`cut`](https://github.com/anupsahoo/revenueos/issues?q=label%3Acut)
+were deliberately left out of the prototype. Each carries a one-line reason and
+is cross-referenced from [`docs/CUT-LIST.md`](docs/CUT-LIST.md). Issues labelled
+`duplicate` are tracked by a later milestone issue, not done. The repo has one
+screen on purpose: the operator loop is the front door at `/`. The earlier
+portfolio and cockpit screens were removed rather than left to look like
+capability.
+
 ## Architecture, end to end (pictorial)
 
 ### High-level — request to answer
