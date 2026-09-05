@@ -12,9 +12,19 @@ import {
   handoffSkeleton,
   type Brief,
   type SeamStatus,
+  type TemplateMatch,
+  type PocPlan,
 } from "@/lib/mock";
 
 type Decision = "accepted" | "rejected" | undefined;
+
+interface DraftPayload {
+  matches: TemplateMatch[];
+  plan: PocPlan;
+  handoff: { section: string; note: string }[];
+  source: "claude" | "sample";
+  model: string | null;
+}
 
 interface EventItem {
   id: number;
@@ -31,10 +41,7 @@ interface Trigger {
 }
 
 const STATUS_LABEL: Record<SeamStatus, string> = { green: "On track", amber: "At risk", red: "Breached" };
-
-function fmtAge(d: number) {
-  return `${d.toFixed(1)}d`;
-}
+const fmtAge = (d: number) => `${d.toFixed(1)}d`;
 
 export default function ControlSurface() {
   const [theme, setTheme] = useState<"light" | "dark" | null>(null);
@@ -45,13 +52,16 @@ export default function ControlSurface() {
   const [edited, setEdited] = useState<Record<string, boolean>>({});
   const [editMode, setEditMode] = useState(false);
   const [selectedId, setSelectedId] = useState<string>(BRIEFS[0].id);
-  const [reuse, setReuse] = useState(21); // US baseline from the brief
+  const [reuse, setReuse] = useState(21);
   const [triggers, setTriggers] = useState<Trigger[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
+  const [drafts, setDrafts] = useState<Record<string, DraftPayload>>({});
+  const [draftLoading, setDraftLoading] = useState<Record<string, boolean>>({});
   const evId = useRef(1000);
   const firedRef = useRef<Set<string>>(new Set());
+  const loadedRef = useRef<Set<string>>(new Set());
+  const boostsRef = useRef<Record<string, number>>({});
 
-  // Theme: read once on mount (no SSR attr → no hydration mismatch).
   useEffect(() => {
     let t: "light" | "dark" = "light";
     try {
@@ -78,21 +88,48 @@ export default function ControlSurface() {
     pushEvent("breach", (<><b>SLA breach</b> · {b.account} · trigger → {SOLUTION_ARCHITECT} (draft attached)</>));
   }, [pushEvent]);
 
-  // Seed initial events + any already-breached briefs, once on mount.
+  // Fetch a real draft from the agent (retrieval + Claude, or sample fallback).
+  const loadDraft = useCallback(async (briefId: string, force = false) => {
+    if (!force && loadedRef.current.has(briefId)) return;
+    loadedRef.current.add(briefId);
+    setDraftLoading((s) => ({ ...s, [briefId]: true }));
+    try {
+      const res = await fetch("/api/draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ briefId, boosts: boostsRef.current }),
+      });
+      if (res.ok) {
+        const data: DraftPayload = await res.json();
+        setDrafts((s) => ({ ...s, [briefId]: data }));
+        const b = BRIEFS.find((x) => x.id === briefId);
+        pushEvent("draft", (<>Agent drafted POC plan · <b>{b?.account}</b> · {data.source === "claude" ? `Claude ${data.model}` : "sample"}</>));
+      } else {
+        loadedRef.current.delete(briefId);
+      }
+    } catch {
+      loadedRef.current.delete(briefId);
+    }
+    setDraftLoading((s) => ({ ...s, [briefId]: false }));
+  }, [pushEvent]);
+
+  // Seed events + any already-breached briefs, once.
   useEffect(() => {
-    BRIEFS.forEach((b) => {
-      if (b.ageDays >= SLA_DAYS) fireBreach(b, b.ageDays);
-    });
+    BRIEFS.forEach((b) => { if (b.ageDays >= SLA_DAYS) fireBreach(b, b.ageDays); });
     setEvents((prev) => [
       ...prev,
       { id: 1, kind: "arrive", time: "3d", text: <>Brief arrived · <b>Meridian Trust Bank</b> (KYC review)</> },
       { id: 2, kind: "arrive", time: "34h", text: <>Brief arrived · <b>Atlas Mutual</b> (claims triage)</> },
       { id: 3, kind: "arrive", time: "10h", text: <>Brief arrived · <b>Cascade Lending</b> (underwriting)</> },
     ]);
+    loadDraft(BRIEFS[0].id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Accelerated demo clock: undecided briefs age; breaches fire automatically.
+  // Fetch draft whenever selection changes (cached after first load).
+  useEffect(() => { loadDraft(selectedId); }, [selectedId, loadDraft]);
+
+  // Accelerated demo clock.
   useEffect(() => {
     const iv = setInterval(() => {
       setAges((prev) => {
@@ -119,26 +156,29 @@ export default function ControlSurface() {
   const seamStatus: SeamStatus = statusForAge(worst);
 
   const decide = (b: Brief, decision: Exclude<Decision, undefined>) => {
+    const usedIds = (drafts[b.id]?.matches ?? matchesFor(b.id)).map((m) => m.templateId);
     setDecisions((prev) => ({ ...prev, [b.id]: decision }));
     if (decision === "accepted") {
-      const used = matchesFor(b.id).length > 0;
-      if (used) setReuse((r) => Math.min(r + 4, 58));
-      const wasEdited = edited[b.id];
-      pushEvent("accept", (<><b>{SOLUTION_ARCHITECT}</b> accepted{wasEdited ? " (edited)" : ""} POC plan · {b.account}{used ? " · reuse +1" : ""}</>));
+      if (usedIds.length) setReuse((r) => Math.min(r + 4, 58));
+      usedIds.forEach((id) => (boostsRef.current[id] = (boostsRef.current[id] ?? 0) + 8));
+      pushEvent("accept", (<><b>{SOLUTION_ARCHITECT}</b> accepted{edited[b.id] ? " (edited)" : ""} POC plan · {b.account}{usedIds.length ? " · reuse +1 · ranking learns" : ""}</>));
     } else {
+      usedIds.forEach((id) => (boostsRef.current[id] = (boostsRef.current[id] ?? 0) - 8));
       pushEvent("reject", (<><b>{SOLUTION_ARCHITECT}</b> rejected draft · {b.account} · ranking penalised</>));
     }
+    // Ranking changed → invalidate other briefs' cached drafts so re-rank shows.
+    for (const other of BRIEFS) if (other.id !== b.id) { loadedRef.current.delete(other.id); }
+    setDrafts((prev) => { const n = { ...prev }; for (const o of BRIEFS) if (o.id !== b.id) delete n[o.id]; return n; });
     setEditMode(false);
-    // advance selection to next open brief
     const nextOpen = BRIEFS.find((x) => x.id !== b.id && !decisions[x.id]);
     if (nextOpen) setSelectedId(nextOpen.id);
   };
 
-  const regenerate = (b: Brief) => pushEvent("draft", (<>Agent re-drafted POC plan · {b.account}</>));
-
-  const plan = planFor(selected);
-  const handoff = handoffSkeleton(selected);
-  const matches = matchesFor(selected.id);
+  const draft = drafts[selected.id];
+  const loading = draftLoading[selected.id];
+  const plan = draft?.plan ?? planFor(selected);
+  const handoff = draft?.handoff ?? handoffSkeleton(selected);
+  const matches = draft?.matches ?? matchesFor(selected.id);
   const decision = decisions[selected.id];
 
   return (
@@ -158,7 +198,6 @@ export default function ControlSurface() {
       </header>
 
       <main className="main">
-        {/* Seam health — computed from events, never entered */}
         <section className="seam" aria-label="Seam health">
           <div className="seam-cell seam-headline">
             <div className="name">Won-opportunity → POC pickup</div>
@@ -185,7 +224,6 @@ export default function ControlSurface() {
         </section>
 
         <div className="grid">
-          {/* Queue */}
           <div className="panel queue">
             <div className="panel-head"><h2>Brief queue</h2><span className="count">{openCount} open</span></div>
             {BRIEFS.map((b) => {
@@ -196,23 +234,15 @@ export default function ControlSurface() {
                 <button key={b.id} className={`brief-row ${b.id === selectedId ? "active" : ""}`} onClick={() => { setSelectedId(b.id); setEditMode(false); }}>
                   <div className="top">
                     <span className="acct">{b.account}</span>
-                    {dec ? (
-                      <span className={`decided ${dec}`}>{dec === "accepted" ? "Accepted" : "Rejected"}</span>
-                    ) : (
-                      <span className={`age-pill status-${st}`}>{fmtAge(a)}</span>
-                    )}
+                    {dec ? (<span className={`decided ${dec}`}>{dec === "accepted" ? "Accepted" : "Rejected"}</span>) : (<span className={`age-pill status-${st}`}>{fmtAge(a)}</span>)}
                   </div>
                   <div className="meta">{b.segment} · {b.region} · {b.regulator}</div>
-                  <div className="tags">
-                    <span className="tag">{b.systems[0]}</span>
-                    <span className="tag">from {b.fromRep.split(" (")[0]}</span>
-                  </div>
+                  <div className="tags"><span className="tag">{b.systems[0]}</span><span className="tag">from {b.fromRep.split(" (")[0]}</span></div>
                 </button>
               );
             })}
           </div>
 
-          {/* Workspace */}
           <div className="work">
             <div className="panel brief-card">
               <div className="eyebrow">Incoming brief · OS event</div>
@@ -229,7 +259,8 @@ export default function ControlSurface() {
             <div className="panel matches">
               <div className="eyebrow">Agent · retrieved templates &amp; why they match</div>
               {matches.map((m) => {
-                const t = templateById(m.templateId)!;
+                const t = templateById(m.templateId);
+                if (!t) return null;
                 return (
                   <div className="match" key={m.templateId}>
                     <div className="mh">
@@ -248,14 +279,16 @@ export default function ControlSurface() {
             <div className="panel">
               <div className="panel-head">
                 <h2>Draft POC plan {editMode && <span style={{ color: "var(--accent)", fontWeight: 600 }}>· editing</span>}</h2>
-                <span className="count">agent draft · editable</span>
+                <span className="count">
+                  {loading ? "agent drafting…" : draft ? (draft.source === "claude" ? `drafted by Claude · ${draft.model}` : "sample draft · editable") : "editable"}
+                </span>
               </div>
               <div
                 className="draft"
                 contentEditable={editMode}
                 suppressContentEditableWarning
                 onInput={() => setEdited((e) => ({ ...e, [selected.id]: true }))}
-                style={editMode ? { outline: "none", boxShadow: "inset 0 0 0 2px var(--accent-soft)" } : undefined}
+                style={{ ...(editMode ? { outline: "none", boxShadow: "inset 0 0 0 2px var(--accent-soft)" } : {}), opacity: loading ? 0.55 : 1 }}
               >
                 <h3>Objective</h3>
                 <p>{plan.objective}</p>
@@ -266,7 +299,7 @@ export default function ControlSurface() {
                 <h3>Scope — out</h3>
                 <ul>{plan.scopeOut.map((s, i) => <li key={i}>{s}</li>)}</ul>
                 <h3>Templates drawn on</h3>
-                <ul>{plan.templatesUsed.map((tu, i) => { const t = templateById(tu.templateId); return <li key={i}><b>{t?.name}</b> — {tu.change}</li>; })}</ul>
+                <ul>{plan.templatesUsed.map((tu, i) => { const t = templateById(tu.templateId); return <li key={i}><b>{t?.name ?? tu.templateId}</b> — {tu.change}</li>; })}</ul>
                 <h3>Week-by-week plan</h3>
                 <div className="weekplan">{plan.weekPlan.map((w, i) => <div className="wk" key={i}><span className="w">{w.week}</span><span className="d">{w.work}</span></div>)}</div>
                 <h3>Risks</h3>
@@ -284,13 +317,11 @@ export default function ControlSurface() {
 
               <div className="actionbar">
                 {decision ? (
-                  <span className="hint">
-                    This brief was <b style={{ color: decision === "accepted" ? "var(--green)" : "var(--red)" }}>{decision}</b> · decision recorded as an OS event.
-                  </span>
+                  <span className="hint">This brief was <b style={{ color: decision === "accepted" ? "var(--green)" : "var(--red)" }}>{decision}</b> · decision recorded as an OS event.</span>
                 ) : (
                   <>
                     <span className="hint">The agent proposes; you commit. Accept, edit, or reject — each is an OS event that feeds ranking.</span>
-                    <button className="btn btn-ghost" onClick={() => regenerate(selected)}>Regenerate</button>
+                    <button className="btn btn-ghost" onClick={() => loadDraft(selected.id, true)} disabled={loading}>Regenerate</button>
                     <button className="btn" onClick={() => setEditMode((e) => !e)}>{editMode ? "Done editing" : "Edit"}</button>
                     <button className="btn btn-danger" onClick={() => decide(selected, "rejected")}>Reject</button>
                     <button className="btn btn-primary" onClick={() => decide(selected, "accepted")}>Accept &amp; send</button>
@@ -300,7 +331,6 @@ export default function ControlSurface() {
             </div>
           </div>
 
-          {/* Right rail */}
           <div className="rail">
             <div className="panel reuse-meter">
               <div className="eyebrow">Reuse of prior solutions</div>
@@ -328,9 +358,7 @@ export default function ControlSurface() {
               <div className="log">
                 {events.map((e) => (
                   <div className={`event ev-${e.kind}`} key={e.id}>
-                    <span className="edot" />
-                    <span className="etime">{e.time}</span>
-                    <span className="etext">{e.text}</span>
+                    <span className="edot" /><span className="etime">{e.time}</span><span className="etext">{e.text}</span>
                   </div>
                 ))}
               </div>
@@ -339,7 +367,7 @@ export default function ControlSurface() {
         </div>
 
         <div className="footer-note">
-          Prototype · all data synthetic · seam health, reuse and triggers are computed live from the event log · agent drafting is stubbed and wires to Claude next.
+          Prototype · all data synthetic · seam health, reuse and triggers computed live from the event log · retrieval is explainable and learns from decisions · POC drafting runs on Claude when an API key is set, otherwise a sample draft.
         </div>
       </main>
     </div>

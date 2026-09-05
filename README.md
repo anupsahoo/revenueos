@@ -44,8 +44,23 @@ All data in this repo is synthetic.
 
 ## Status
 
-🟡 Scaffold + architecture. See [`PLAN.md`](PLAN.md). The working system lands next.
+🟢 Working control surface with the agent wired in. Explainable retrieval and
+POC drafting run behind the UI (`/api/draft`); seam health, reuse and triggers
+are computed live. Persistent event store (Neon/Postgres) is the next step — see
+[`PLAN.md`](PLAN.md).
 
 ## Run
 
-_Added with the first working slice._ Target: `npm install && npm run dev`.
+```bash
+npm install
+npm run dev          # http://localhost:3000
+```
+
+Runs with no configuration — POC drafting falls back to a deterministic sample
+plan. To draft with Claude, set an API key (see [`.env.example`](.env.example)):
+
+```bash
+cp .env.example .env.local   # add ANTHROPIC_API_KEY
+```
+
+`npm run build` produces the Vercel production build.
