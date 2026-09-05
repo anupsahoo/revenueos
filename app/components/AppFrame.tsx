@@ -20,10 +20,11 @@ export function useApp(): Ctx {
 }
 
 const NAV = [
+  { href: "/", label: "Command Centre", icon: "🌐" },
   { href: "/sales", label: "Sales cockpit", icon: "📊" },
   { href: "/presales", label: "Pre-Sales cockpit", icon: "🧭" },
-  { href: "/", label: "Operator · the loop", icon: "⚙️" },
   { href: "/onboarding", label: "Onboarding", icon: "🚀" },
+  { href: "/operator", label: "Operator · loop", icon: "⚙️" },
 ];
 
 export default function AppFrame({ children }: { children: React.ReactNode }) {

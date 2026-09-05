@@ -365,3 +365,15 @@ a { color: inherit; }
 .risk-note { font-size: 12.5px; color: var(--ink-2); padding: 12px; }
 
 @media (max-width: 1000px) { .cols-2 { grid-template-columns: 1fr; } .rail { display: none; } }
+
+/* ===== Chart dashboards =================================================== */
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; box-shadow: var(--shadow); position: relative; overflow: hidden; }
+.stat-label { font-family: var(--font-mono), monospace; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.stat-value { font-size: 24px; font-weight: 750; letter-spacing: -0.02em; margin-top: 4px; }
+.stat-unit { font-size: 14px; margin-left: 2px; color: var(--ink-3); }
+.stat-spark { position: absolute; right: 8px; bottom: 8px; width: 52%; height: 26px; opacity: 0.55; }
+.stat-delta { font-size: 10.5px; color: var(--ink-3); margin-top: 3px; }
+.chart-panel { display: flex; flex-direction: column; }
+.chart-body { padding: 12px 14px 14px; }
+.chart-skel { background: var(--panel-2); border-radius: 8px; opacity: 0.5; }
+.recharts-surface { overflow: visible; }
