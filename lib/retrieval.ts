@@ -73,10 +73,10 @@ export function scoreTemplate(
   }
 
   // Recency
-  const ageDays = (Date.now() - new Date(t.lastUsed).getTime()) / DAY;
-  if (ageDays < 60) {
+  const daysSinceUse = (Date.now() - new Date(t.lastUsed).getTime()) / DAY;
+  if (daysSinceUse < 60) {
     score += 5;
-    reasons.push(`Recently used (${Math.round(ageDays)}d ago)`);
+    reasons.push(`Recently used (${Math.round(daysSinceUse)}d ago)`);
   }
 
   // Proven reuse

@@ -1,27 +1,35 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  BRIEFS, SLA_DAYS, SOLUTION_ARCHITECT, REF, businessDaysBetween, statusForAge, templateById,
+  BRIEFS, SLA_DAYS, SOLUTION_ARCHITECT, templateById,
   requiredSkills, skillAvail, skillStatus, skillCoverage, skillPrepPlan,
-  type Brief, type SeamStatus, type TemplateMatch, type PocPlan,
+  type Brief, type TemplateMatch, type PocPlan,
 } from "@/lib/mock";
+import type { QueueRow, TriggerRow, Status } from "@/lib/derive";
 
 interface Draft { matches: TemplateMatch[]; plan: PocPlan; handoff: { section: string; note: string }[]; source: "ai" | "sample"; model: string | null; }
-type Decision = "accepted" | "rejected";
+interface Seam {
+  now: string; slaDays: number;
+  health: { green: number; amber: number; red: number; worstBriefId?: string; worstAge: number };
+  queue: QueueRow[]; triggers: TriggerRow[];
+  reuse: { accepted: number; rejected: number; total: number; rate: number };
+}
+const STAT: Record<Status, string> = { green: "on track", amber: "at risk", red: "breached" };
+const CH: Record<Status, string> = { green: "g", amber: "a", red: "r" };
+const SG: Record<Status, string> = { green: "sg", amber: "sa", red: "sr" };
+const TC: Record<Status, string> = { green: "tg", amber: "ta", red: "tr" };
+const RANK: Record<Status, number> = { red: 0, amber: 1, green: 2 };
 const DAY = 86_400_000;
-const STAT: Record<SeamStatus, string> = { green: "on track", amber: "at risk", red: "breached" };
-const CH: Record<SeamStatus, string> = { green: "g", amber: "a", red: "r" };
-const SG: Record<SeamStatus, string> = { green: "sg", amber: "sa", red: "sr" };
-const TC: Record<SeamStatus, string> = { green: "tg", amber: "ta", red: "tr" };
 
 const DERIV = {
-  age: "Business days since this brief arrived, computed now. Weekends are skipped because the SLA is stated in business days.",
-  status: "Red at or past 2.0 business days; amber from 1.0; green below. Derived from age; nothing is stored.",
-  reuse: "Accepted drafts ÷ (accepted + rejected), over the decision events this session. Moves the moment a decision is recorded.",
-  match: "Structured scoring: segment 30, regulator 16 (analogue 8), problem overlap up to 26, shared systems up to 18, recency 5, proven reuse 4, cross-region 3, plus a learned ±8 per prior accept/reject. Threshold 40.",
-  health: "Every open brief's status, recomputed from arrival times on each poll.",
-  skills: "Each skill the project needs, matched to the team's current bench strength (0-100). Green ≥70 strong, amber 40-69 partial, red <40 gap. Coverage is the average across the required skills.",
+  age: "Business days since this brief's arrival event, computed now. Weekends are skipped because the SLA is stated in business days. Query: briefAgeDays() in lib/derive.ts.",
+  status: "Red at or past 2.0 business days, amber from 1.0, green below. Derived from the arrival event; nothing is stored. Query: seamStatus().",
+  reuse: "Accepted drafts divided by accepted plus rejected, over the decision events. It moves the moment a decision is recorded. Query: reuseRate().",
+  match: "Structured scoring: segment 30, regulator 16 (analogue 8), problem overlap up to 26, shared systems up to 18, recency 5, proven reuse 4, cross-region 3, plus a learned ±8 per prior accept or reject from the event log. Threshold 40. Query: scoreTemplate() in lib/retrieval.ts with boosts() from lib/derive.ts.",
+  health: "Every open brief's status, recomputed from arrival events on each 30-second poll. Query: health().",
+  skills: "Each skill the project needs, matched to the team's current bench strength (0-100). Green 70 and above is strong, amber 40-69 partial, red below 40 a gap. Coverage is the average across the required skills.",
+  trigger: "Every escalation the seam fired when a brief passed the 2-day SLA, newest first. Query: triggerLog().",
 };
 const CHIPS = [
   "Why did the agent pick this template for the selected brief?",
@@ -32,7 +40,7 @@ const CHIPS = [
   "What breaks first at ten times the volume?",
 ];
 
-function Info({ id, text, open, set, glyph = "i", label = "Derivation" }: { id: string; text: string; open: string | null; set: (v: string | null) => void; glyph?: string; label?: string }) {
+function Info({ id, text, open, set, glyph = "i", label = "How this is computed" }: { id: string; text: string; open: string | null; set: (v: string | null) => void; glyph?: string; label?: string }) {
   const isOpen = open === id;
   return (
     <span className="info">
@@ -43,93 +51,105 @@ function Info({ id, text, open, set, glyph = "i", label = "Derivation" }: { id: 
 }
 
 export default function Operator() {
-  const [now, setNow] = useState(REF);
+  const [seam, setSeam] = useState<Seam | null>(null);
   const [theme, setTheme] = useState<"light" | "dark" | null>(null);
   const [info, setInfo] = useState<string | null>(null);
-  const [decisions, setDecisions] = useState<Record<string, { d: Decision; at: string }>>({});
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [loading, setLoading] = useState<Record<string, boolean>>({});
   const [edited, setEdited] = useState<Record<string, Partial<PocPlan>>>({});
   const [editMode, setEditMode] = useState(false);
   const [selectedId, setSelectedId] = useState<string>(BRIEFS[0].id);
   const [q, setQ] = useState("");
-  const [statusFilter, setStatusFilter] = useState<SeamStatus | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<Status | "all">("all");
   const [dCollapsed, setDCollapsed] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [openPrep, setOpenPrep] = useState<string | null>(null);
-  const [lastDelta, setLastDelta] = useState<{ account: string; d: Decision; items: { name: string; up: boolean }[] } | null>(null);
+  const [lastDelta, setLastDelta] = useState<{ account: string; d: string; items: { name: string; up: boolean }[] } | null>(null);
   const [keyed, setKeyed] = useState(false);
   const [chat, setChat] = useState<{ role: "q" | "a"; text: string; sources?: string }[]>([]);
   const [askText, setAskText] = useState("");
   const [asking, setAsking] = useState(false);
-  const boostsRef = useRef<Record<string, number>>({});
-  const loadedRef = useRef<Set<string>>(new Set());
+
+  const loadSeam = useCallback(async () => {
+    try { const r = await fetch("/api/seam/health"); if (r.ok) setSeam(await r.json()); } catch {}
+  }, []);
 
   useEffect(() => {
     let t: "light" | "dark" = "light";
     try { const s = localStorage.getItem("revos-theme"); if (s === "dark" || s === "light") t = s; else if (window.matchMedia("(prefers-color-scheme: dark)").matches) t = "dark"; } catch {}
     setTheme(t);
-    const tick = () => setNow(Date.now());
-    tick(); const iv = setInterval(tick, 30_000);
+    loadSeam();
+    const iv = setInterval(() => { if (document.visibilityState === "visible") loadSeam(); }, 30_000);
     fetch("/api/ask").then((r) => r.json()).then((d) => setKeyed(!!d.keyed)).catch(() => {});
     return () => clearInterval(iv);
-  }, []);
+  }, [loadSeam]);
   useEffect(() => { if (theme) { document.documentElement.setAttribute("data-theme", theme); try { localStorage.setItem("revos-theme", theme); } catch {} } }, [theme]);
 
-  const age = useCallback((b: Brief) => businessDaysBetween(b.arrivedAt, now), [now]);
+  const rows = seam?.queue ?? [];
+  const rowById = (id: string) => rows.find((r) => r.briefId === id);
+  const openRows = rows.filter((r) => r.latestDecision !== "accepted" && r.latestDecision !== "rejected");
 
-  // Health counts over open briefs
-  const open = BRIEFS.filter((b) => !decisions[b.id]);
-  const counts = open.reduce((a, b) => { a[statusForAge(age(b))]++; return a; }, { green: 0, amber: 0, red: 0 } as Record<SeamStatus, number>);
-  const accepted = Object.values(decisions).filter((d) => d.d === "accepted").length;
-  const rejected = Object.values(decisions).filter((d) => d.d === "rejected").length;
-  const reuseNow = accepted + rejected ? Math.round((accepted / (accepted + rejected)) * 100) : 21;
-
-  // Queue: filter, then sort red>amber>green then age desc, decided last
-  const rank: Record<SeamStatus, number> = { red: 0, amber: 1, green: 2 };
-  const queue = useMemo(() => {
-    return BRIEFS.filter((b) => {
-      if (q && !(`${b.account} ${b.title}`.toLowerCase().includes(q.toLowerCase()))) return false;
-      if (statusFilter !== "all" && !decisions[b.id] && statusForAge(age(b)) !== statusFilter) return false;
+  const queueView = useMemo(() => {
+    return rows.filter((r) => {
+      if (q && !(`${r.account} ${r.title}`.toLowerCase().includes(q.toLowerCase()))) return false;
+      const decided = r.latestDecision === "accepted" || r.latestDecision === "rejected";
+      if (statusFilter !== "all" && !decided && r.status !== statusFilter) return false;
       return true;
     }).sort((a, b) => {
-      const da = !!decisions[a.id], db = !!decisions[b.id];
+      const da = a.latestDecision === "accepted" || a.latestDecision === "rejected";
+      const db = b.latestDecision === "accepted" || b.latestDecision === "rejected";
       if (da !== db) return da ? 1 : -1;
-      const sa = statusForAge(age(a)), sb = statusForAge(age(b));
-      if (rank[sa] !== rank[sb]) return rank[sa] - rank[sb];
-      return age(b) - age(a);
+      if (RANK[a.status] !== RANK[b.status]) return RANK[a.status] - RANK[b.status];
+      return b.age - a.age;
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, statusFilter, decisions, now]);
+  }, [rows, q, statusFilter]);
 
-  const breaches = open.filter((b) => age(b) >= SLA_DAYS).sort((a, b) => age(a) - age(b));
+  // Keep the selection on something sensible once the queue arrives.
+  useEffect(() => {
+    if (!seam) return;
+    const cur = rowById(selectedId);
+    const decided = cur && (cur.latestDecision === "accepted" || cur.latestDecision === "rejected");
+    if (!cur || decided) {
+      const next = queueView.find((r) => r.latestDecision !== "accepted" && r.latestDecision !== "rejected");
+      if (next) setSelectedId(next.briefId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seam]);
 
   const brief = BRIEFS.find((b) => b.id === selectedId)!;
+  const row = rowById(selectedId);
   const draft = drafts[selectedId];
   const isLoading = loading[selectedId];
 
   const loadDraft = useCallback(async (b: Brief, force = false) => {
-    if (!force && loadedRef.current.has(b.id)) return;
-    loadedRef.current.add(b.id);
+    if (!force && drafts[b.id]) return;
     setLoading((s) => ({ ...s, [b.id]: true }));
     try {
-      const res = await fetch("/api/draft", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ brief: b, boosts: boostsRef.current }) });
-      if (res.ok) { const d = await res.json(); setDrafts((s) => ({ ...s, [b.id]: d })); } else loadedRef.current.delete(b.id);
-    } catch { loadedRef.current.delete(b.id); }
+      const res = await fetch("/api/draft", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ brief: b }) });
+      if (res.ok) { const d = await res.json(); setDrafts((s) => ({ ...s, [b.id]: d })); }
+    } catch {}
     setLoading((s) => ({ ...s, [b.id]: false }));
-  }, []);
-  useEffect(() => { loadDraft(brief); }, [brief, loadDraft]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drafts]);
+  useEffect(() => { if (brief) loadDraft(brief); }, [brief, loadDraft]);
 
-  const decide = (b: Brief, d: Decision) => {
-    const used = (drafts[b.id]?.matches ?? []).map((m) => m.templateId);
-    const at = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
-    setDecisions((prev) => ({ ...prev, [b.id]: { d, at } }));
-    used.forEach((id) => (boostsRef.current[id] = (boostsRef.current[id] ?? 0) + (d === "accepted" ? 8 : -8)));
-    // #8 — show the library re-ranking so "the system learns" is visible.
-    setLastDelta({ account: b.account, d, items: used.map((id) => ({ name: templateById(id)?.name ?? id, up: d === "accepted" })) });
+  const decide = async (b: Brief, decision: "accepted" | "rejected" | "edited") => {
+    const d = drafts[b.id];
+    const changed = Object.keys(edited[b.id] ?? {});
+    await fetch("/api/decisions", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        briefId: b.id, decision, actor: `${SOLUTION_ARCHITECT}, US Solution Architect`,
+        draft: d ? { matches: d.matches, source: d.source, model: d.model } : undefined,
+        ...(decision === "edited" && changed.length ? { editSummary: `changed: ${changed.join(", ")}` } : {}),
+      }),
+    });
+    if (decision !== "edited") {
+      setLastDelta({ account: b.account, d: decision, items: (d?.matches ?? []).map((m) => ({ name: templateById(m.templateId)?.name ?? m.templateId, up: decision === "accepted" })) });
+      setDrafts({}); // ranking changed — drafts are re-fetched with the new boosts
+    }
     setEditMode(false);
-    const next = BRIEFS.find((x) => x.id !== b.id && !decisions[x.id]);
-    if (next) setSelectedId(next.id);
+    await loadSeam();
   };
 
   const planVal = (f: keyof PocPlan) => (edited[selectedId]?.[f] ?? draft?.plan[f]) as unknown;
@@ -140,7 +160,7 @@ export default function Operator() {
     setChat((c) => [...c, { role: "q", text: question }]);
     setAsking(true);
     try {
-      const ctx = { waiting: open.length, green: counts.green, amber: counts.amber, red: counts.red, reuseNow, selectedBrief: { account: brief.account, title: brief.title, matches: (draft?.matches ?? []).map((m) => ({ id: m.templateId, score: m.score })) } };
+      const ctx = { health: seam?.health, reuse: seam?.reuse, triggers: seam?.triggers?.slice(0, 5), selectedBrief: { account: brief.account, title: brief.title, matches: (draft?.matches ?? []).map((m) => ({ id: m.templateId, score: m.score })) } };
       const res = await fetch("/api/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question, context: ctx }) });
       const d = await res.json();
       setChat((c) => [...c, { role: "a", text: d.answer || "Could not answer.", sources: d.sources }]);
@@ -148,8 +168,10 @@ export default function Operator() {
     setAsking(false);
   };
 
-  const bAge = age(brief), bStatus = statusForAge(bAge);
-  const eventId = `evt_${brief.id.replace("br-", "")}${Math.floor(brief.arrivedAt / 100000) % 10000}`;
+  const reusePct = seam ? Math.round(seam.reuse.rate * 100) : 0;
+  const bAge = row?.age ?? 0;
+  const bStatus: Status = row?.status ?? "green";
+  const decided = row?.latestDecision === "accepted" || row?.latestDecision === "rejected";
 
   return (
     <div className="op" onClick={() => setInfo(null)}>
@@ -157,26 +179,26 @@ export default function Operator() {
       <div className="stripA">
         <div className="idc">
           <span className="mark">R</span>
-          <div><div className="who">Revenue<b>OS</b> · Dana Ortiz</div><div className="role">US Solution Architect · /operator</div></div>
+          <div><div className="who">Revenue<b>OS</b> · {SOLUTION_ARCHITECT}</div><div className="role">US Solution Architect · Sales → PreSales</div></div>
         </div>
         <div className="divv" />
         <div className="grp">
           <span className="eyebrow">Seam health</span>
           <div className="row">
-            <span className="dotpill g"><span className="dot" />{counts.green} on track</span>
-            <span className="dotpill a"><span className="dot" />{counts.amber} at risk</span>
-            <span className="dotpill r"><span className="dot" />{counts.red} breached</span>
+            <span className="dotpill g"><span className="dot" />{seam?.health.green ?? 0} on track</span>
+            <span className="dotpill a"><span className="dot" />{seam?.health.amber ?? 0} at risk</span>
+            <span className="dotpill r"><span className="dot" />{seam?.health.red ?? 0} breached</span>
             <Info id="health" text={DERIV.health} open={info} set={setInfo} />
           </div>
         </div>
         <div className="divv" />
         <div className="grp reuse">
           <span className="eyebrow">Reuse</span>
-          <div className="row"><span className="n1 mono">21%</span><span style={{ color: "var(--ink-3)" }}>→</span><span className="n2 mono">{reuseNow}%</span><Info id="reuse" text={DERIV.reuse} open={info} set={setInfo} /></div>
+          <div className="row"><span className="n1 mono">21%</span><span style={{ color: "var(--ink-3)" }}>→</span><span className="n2 mono">{seam && seam.reuse.total ? `${reusePct}%` : "—"}</span><Info id="reuse" text={DERIV.reuse} open={info} set={setInfo} /></div>
         </div>
         <span className="poll">polling every 30 s</span>
         <div className="spacer" />
-        <div className="badges"><span className="badge">Synthetic data</span></div>
+        <div className="badges"><span className="badge">Synthetic data · event store in-memory (resets on cold start)</span></div>
         <button className="btn how-btn" onClick={() => setShowGuide(true)}>? How to use</button>
         <button className="iconbtn" aria-label="Theme" onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}>{theme === "dark" ? "☀" : "☾"}</button>
       </div>
@@ -185,24 +207,25 @@ export default function Operator() {
         {/* B · queue */}
         <div className="colB">
           <div className="colB-head">
-            <div className="top"><span className="eyebrow">Queue</span><span className="mono" style={{ fontSize: 11, color: "var(--ink-3)" }}>{open.length} open</span></div>
+            <div className="top"><span className="eyebrow">Queue</span><span className="mono" style={{ fontSize: 11, color: "var(--ink-3)" }}>{openRows.length} open</span></div>
             <input className="q-filter" placeholder="Filter account or problem" value={q} onChange={(e) => setQ(e.target.value)} />
-            <select className="q-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as SeamStatus | "all")}>
+            <select className="q-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as Status | "all")}>
               <option value="all">Any status</option><option value="red">Breached</option><option value="amber">At risk</option><option value="green">On track</option>
             </select>
           </div>
           <div className="q-list">
-            {queue.map((b) => {
-              const st = statusForAge(age(b)); const dec = decisions[b.id];
+            {!seam && <div className="empty">Reading the event log…</div>}
+            {queueView.map((r) => {
+              const dec = r.latestDecision === "accepted" || r.latestDecision === "rejected" ? r.latestDecision : undefined;
               return (
-                <button key={b.id} className={`q-card ${b.id === selectedId ? "on" : ""}`} onClick={() => { setSelectedId(b.id); setEditMode(false); }}>
-                  {!dec && <span className={`stripe ${SG[st]}`} />}
-                  <div className="r1"><span className="acct">{b.account}</span>{dec ? <span className={`decided ${TC[dec.d === "accepted" ? "green" : "red"]}`}>{dec.d}</span> : <span className={`age mono ${TC[st]}`}>{age(b).toFixed(1)}d</span>}</div>
-                  <div className="meta">{b.segment} · {b.region}</div>
+                <button key={r.briefId} className={`q-card ${r.briefId === selectedId ? "on" : ""}`} onClick={() => { setSelectedId(r.briefId); setEditMode(false); }}>
+                  {!dec && <span className={`stripe ${SG[r.status]}`} />}
+                  <div className="r1"><span className="acct">{r.account}</span>{dec ? <span className={`decided ${dec === "accepted" ? "tg" : "tr"}`}>{dec}</span> : <span className={`age mono ${TC[r.status]}`}>{r.age.toFixed(1)}d</span>}</div>
+                  <div className="meta">{r.segment} · {r.region}</div>
                 </button>
               );
             })}
-            {queue.length === 0 && <div className="empty">No briefs match this filter.</div>}
+            {seam && queueView.length === 0 && <div className="empty">No briefs match this filter.</div>}
           </div>
           <div className="q-foot">sorted red · amber · green · then age</div>
         </div>
@@ -216,13 +239,13 @@ export default function Operator() {
                 <span className="src">{isLoading ? "drafting…" : draft ? (draft.source === "ai" ? "drafted by AI model" : "sample draft") : ""}</span>
                 <div className="cluster">
                   <span style={{ fontSize: 12, color: "var(--ink-3)" }}>age</span>
-                  <span className={`agev ${TC[bStatus]}`}>{bAge.toFixed(1)}d</span>
+                  <span className={`agev ${TC[bStatus]}`}>{seam ? `${bAge.toFixed(1)}d` : "—"}</span>
                   <Info id="c-age" text={DERIV.age} open={info} set={setInfo} />
                   <span className={`dotpill ${CH[bStatus]}`}><span className="dot" />{STAT[bStatus]}</span>
                   <Info id="c-status" text={DERIV.status} open={info} set={setInfo} />
                 </div>
               </div>
-              <div className="r2"><span className="k">segment</span> {brief.segment} · <span className="k">regulator</span> {brief.regulator} · <span className="k">region</span> {brief.region} · <span className="mono" style={{ color: "var(--ink-3)" }}>{eventId}</span></div>
+              <div className="r2"><span className="k">segment</span> {brief.segment} · <span className="k">regulator</span> {brief.regulator} · <span className="k">region</span> {brief.region} · <span className="k">from</span> {brief.fromRep}</div>
               <div className="prob">{brief.problem}</div>
             </div>
 
@@ -275,15 +298,15 @@ export default function Operator() {
             </div>
 
             <div>
-              <div className="sec-eyebrow"><span className="eyebrow">POC plan {draft ? "" : ""}</span>{editMode && <span className="mono" style={{ fontSize: 11, color: "var(--accent)" }}>editing · saved as one draft.edited event</span>}</div>
+              <div className="sec-eyebrow"><span className="eyebrow">POC plan</span>{editMode && <span className="mono" style={{ fontSize: 11, color: "var(--accent)" }}>editing · Save records a draft.edited event</span>}</div>
               {isLoading && !draft ? (
                 <div className="plan-grid">{[0, 1, 2, 3].map((i) => <div key={i} className="skel" style={{ height: 90 }} />)}</div>
               ) : draft ? (
                 <div className="plan-grid">
-                  <EditBlock label="Objective" editMode={editMode} value={(planVal("objective") as string)} onChange={(v) => setEdit("objective", v)} />
-                  <ListBlock label="Success criteria" editMode={editMode} value={(planVal("successCriteria") as string[])} onChange={(v) => setEdit("successCriteria", v)} />
-                  <ListBlock label="Scope — in" editMode={editMode} value={(planVal("scopeIn") as string[])} onChange={(v) => setEdit("scopeIn", v)} />
-                  <ListBlock label="Risks" editMode={editMode} value={(planVal("risks") as string[])} onChange={(v) => setEdit("risks", v)} />
+                  <EditBlock label="Objective" editMode={editMode} value={planVal("objective") as string} onChange={(v) => setEdit("objective", v)} />
+                  <ListBlock label="Success criteria" editMode={editMode} value={planVal("successCriteria") as string[]} onChange={(v) => setEdit("successCriteria", v)} />
+                  <ListBlock label="Scope — in" editMode={editMode} value={planVal("scopeIn") as string[]} onChange={(v) => setEdit("scopeIn", v)} />
+                  <ListBlock label="Risks" editMode={editMode} value={planVal("risks") as string[]} onChange={(v) => setEdit("risks", v)} />
                   <div className="block wide"><div className="lbl">Templates used and what changes</div><ul>{draft.plan.templatesUsed.length ? draft.plan.templatesUsed.map((tu, i) => <li key={i}><b>{templateById(tu.templateId)?.name ?? tu.templateId}</b> — {tu.change}</li>) : <li style={{ color: "var(--ink-3)" }}>None (sample fallback)</li>}</ul></div>
                   <div className="block wide"><div className="lbl">Week-by-week plan</div><div className="weeks">{draft.plan.weekPlan.map((w, i) => <div className="wk" key={i}><span className="w">{w.week}</span><span>{w.work}</span></div>)}</div></div>
                 </div>
@@ -297,18 +320,18 @@ export default function Operator() {
           </div>
 
           <div className="actionbar">
-            {decisions[selectedId] ? (
-              <span className="decided-line">This brief was {decisions[selectedId].d} by {SOLUTION_ARCHITECT} at {decisions[selectedId].at} · library re-ranked</span>
+            {decided ? (
+              <span className="decided-line">This brief was {row?.latestDecision} by {SOLUTION_ARCHITECT}{row?.decidedAt ? ` at ${new Date(row.decidedAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })}` : ""} · recorded as an event</span>
             ) : (<>
-              <button className="btn btn-primary" title="Send this plan to the customer and record the decision" onClick={() => decide(brief, "accepted")}>Accept</button>
-              <Info glyph="?" label="Accept" id="h-accept" text="Sends the draft as-is and records your decision. The template it used is promoted, so it ranks higher next time." open={info} set={setInfo} />
-              <button className="btn" title="Change any part of the plan before sending" onClick={() => setEditMode((e) => !e)}>{editMode ? "Save edits" : "Edit"}</button>
-              <Info glyph="?" label="Edit" id="h-edit" text="Turns the plan into editable boxes. Change anything, then Save. Your edits are kept with the decision." open={info} set={setInfo} />
+              <button className="btn btn-primary" title="Send this plan and record the decision" onClick={() => decide(brief, "accepted")}>Accept</button>
+              <Info glyph="?" label="Accept" id="h-accept" text="Sends the draft as-is and writes a draft.accepted event. The templates it used are promoted by 8, so they rank higher next time." open={info} set={setInfo} />
+              <button className="btn" title="Change the plan before sending" onClick={() => { if (editMode) decide(brief, "edited"); setEditMode((e) => !e); }}>{editMode ? "Save edits" : "Edit"}</button>
+              <Info glyph="?" label="Edit" id="h-edit" text="Turns the plan into editable boxes. Save writes a draft.edited event recording which fields changed." open={info} set={setInfo} />
               <button className="btn btn-danger" title="Reject this draft; the system learns from it" onClick={() => decide(brief, "rejected")}>Reject</button>
-              <Info glyph="?" label="Reject" id="h-reject" text="Rejects this draft. The template it used is demoted, so it ranks lower next time. Use this when the match is wrong." open={info} set={setInfo} />
-              <button className="btn" title="Ask the AI to draft the plan again" onClick={() => loadDraft(brief, true)} disabled={isLoading}>Regenerate</button>
-              <Info glyph="?" label="Regenerate" id="h-regen" text="Runs the AI again to produce a fresh draft for this same brief. Nothing is decided." open={info} set={setInfo} />
-              <span className="note">decision recorded as {SOLUTION_ARCHITECT}, US Solution Architect · each writes an event and re-ranks the library</span>
+              <Info glyph="?" label="Reject" id="h-reject" text="Writes a draft.rejected event. The templates it used are demoted by 8, so they rank lower next time." open={info} set={setInfo} />
+              <button className="btn" title="Ask the AI to draft again" onClick={() => loadDraft(brief, true)} disabled={isLoading}>Regenerate</button>
+              <Info glyph="?" label="Regenerate" id="h-regen" text="Runs the agent again for this brief and records a draft.generated event. Nothing is decided." open={info} set={setInfo} />
+              <span className="note">decision recorded as {SOLUTION_ARCHITECT}, US Solution Architect</span>
             </>)}
           </div>
         </div>
@@ -337,20 +360,28 @@ export default function Operator() {
 
       {/* E · trigger log */}
       <div className="stripE">
-        <div className="stripE-head"><span className="eyebrow">Trigger log</span><span className="mono" style={{ fontSize: 11, color: "var(--ink-3)" }}>{breaches.length} triggers · newest first</span><span className="e-explain">When a brief passes its 2-day SLA, the system escalates it here to the named owner, automatically. Red means already breached.</span></div>
+        <div className="stripE-head">
+          <span className="eyebrow">Trigger log</span>
+          <span className="mono" style={{ fontSize: 11, color: "var(--ink-3)" }}>{seam?.triggers.length ?? 0} triggers · newest first</span>
+          <Info id="e-trigger" text={DERIV.trigger} open={info} set={setInfo} />
+          <span className="e-explain">When a brief passes its 2-day SLA the system escalates it here to the named owner, automatically.</span>
+        </div>
         <div className="log">
-          {breaches.length === 0 ? <div className="empty">No triggers yet. The seam checks every 30 s.</div> : breaches.map((b) => {
-            const at = new Date(b.arrivedAt + SLA_DAYS * DAY).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
-            return <div className="logrow br" key={b.id}><span>{at}</span><span>·</span><span>{b.account}</span><span>·</span><span>breached 2d SLA → escalated to {SOLUTION_ARCHITECT}, US Solution Architect</span><span className="attach">draft attached</span></div>;
-          })}
+          {!seam ? <div className="empty">Reading the event log…</div> : seam.triggers.length === 0 ? <div className="empty">No triggers yet. The seam checks every 30 s.</div> : seam.triggers.map((t, i) => (
+            <div className="logrow br" key={i}>
+              <span>{new Date(t.ts).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })}</span><span>·</span>
+              <span>{t.account}</span><span>·</span>
+              <span>breached {SLA_DAYS}d SLA → escalated to {t.owner}</span>
+              {t.draftAttached && <span className="attach">draft attached</span>}
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* #8 — the system learns: ranking moved after the last decision */}
       {lastDelta && (
         <div className="delta-toast" onClick={(e) => e.stopPropagation()}>
           <div className="dt-h">The system just learned<button className="dt-x" onClick={() => setLastDelta(null)} aria-label="Dismiss">✕</button></div>
-          <div className="dt-sub">{lastDelta.account} · {lastDelta.d}. The library was re-ranked, so next time:</div>
+          <div className="dt-sub">{lastDelta.account} · {lastDelta.d}. Recorded as an event; the library was re-ranked:</div>
           {lastDelta.items.length === 0 ? <div className="dt-row mono">no template was used on this draft</div> : lastDelta.items.map((it, i) => (
             <div className="dt-row" key={i}><span className={`mono ${it.up ? "tg" : "tr"}`}>{it.up ? "▲ +8" : "▼ −8"}</span><span>{it.name}</span></div>
           ))}
@@ -384,10 +415,10 @@ function Guide({ onClose }: { onClose: () => void }) {
           <h3>Work a brief in five steps</h3>
           <ol className="guide-steps">
             <li><b>Pick the top brief</b> in the queue (left). It is sorted most urgent first: red is late, amber is close, green is fine.</li>
-            <li><b>Check the skills</b> needed vs what your team has. Green is your strength; a red gap has a <b>Prepare</b> button that gives you a plan to get ready.</li>
+            <li><b>Check the skills</b> needed against what your team has. Green is your strength; a red gap has a <b>prepare</b> button that gives you a plan to get ready.</li>
             <li><b>Read the matches</b> — past solutions we can reuse, each with a score and the reason it fits. This is how you avoid building from scratch.</li>
             <li><b>Read the draft plan.</b> Edit anything, or press <b>Accept</b> to send it. Press <b>Reject</b> if the match is wrong.</li>
-            <li><b>The system learns.</b> Every accept or reject re-ranks the library, so the next brief is better. You will see it move.</li>
+            <li><b>The system learns.</b> Every accept or reject is recorded and re-ranks the library, so the next brief is better. You will see it move.</li>
           </ol>
 
           <h3>What the numbers mean</h3>
@@ -395,12 +426,15 @@ function Guide({ onClose }: { onClose: () => void }) {
             <tbody>
               <tr><td>Age</td><td>Business days since the brief arrived. The target is 2.</td></tr>
               <tr><td>On track / at risk / breached</td><td>The traffic light on the 2-day SLA.</td></tr>
-              <tr><td>Match %</td><td>How well a past solution fits this brief (higher is better).</td></tr>
-              <tr><td>Reuse</td><td>How often we reuse past work instead of starting over. We want this to rise.</td></tr>
+              <tr><td>Match %</td><td>How well a past solution fits this brief. Higher is better.</td></tr>
+              <tr><td>Reuse</td><td>Accepted drafts out of all decisions. We want this to rise from 21%.</td></tr>
               <tr><td>Skills coverage</td><td>How much of the needed skill set we already have.</td></tr>
-              <tr><td>ⓘ next to a number</td><td>Click it to see exactly how that number is worked out.</td></tr>
+              <tr><td>ⓘ next to a number</td><td>Click it to see exactly which query produces that number.</td></tr>
             </tbody>
           </table>
+
+          <h3>Where the numbers come from</h3>
+          <p className="guide-note">Nothing on this screen is typed in. Every action writes an event — a brief arriving, a draft being generated, your accept or reject, an SLA breach, an escalation. Every number you see is worked out from that list of events, live, every 30 seconds. That is why each number can show you its own working.</p>
 
           <h3>What you can ask "Ask the seam" (right side)</h3>
           <ul className="guide-ask">
@@ -412,7 +446,7 @@ function Guide({ onClose }: { onClose: () => void }) {
           </ul>
 
           <h3>Good to know</h3>
-          <p className="guide-note">Every name and number here is made up for the demo (synthetic). The memory is temporary and resets if the server sleeps, which is fine for a demo. In production this sits on a real event store.</p>
+          <p className="guide-note">Every name and number here is made up for the demo (synthetic). The event log is held in memory, so it resets if the server sleeps. That is fine for a demo; in production it sits on a database, which is a one-line swap.</p>
         </div>
       </div>
     </div>

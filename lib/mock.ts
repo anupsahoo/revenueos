@@ -51,12 +51,6 @@ export const SOLUTION_ARCHITECT = "Dana Ortiz";
 // on the client after mount.
 export const REF = Date.now();
 
-export function statusForAge(ageDays: number): SeamStatus {
-  if (ageDays >= SLA_DAYS) return "red";
-  if (ageDays >= 1) return "amber";
-  return "green";
-}
-
 // ---- Template library (15, across UK + India) -------------------------------
 export const TEMPLATES: SolutionTemplate[] = [
   { id: "tpl-uk-kyc-01", name: "KYC Document Review Copilot", region: "UK", segment: "Retail bank", regulator: "FCA", problem: "Manual KYC review of onboarding documents created a multi-day backlog.", capabilities: ["Document extraction", "Identity match", "Risk flagging", "Audit trail"], integrations: ["Actimize", "SharePoint", "Salesforce"], effortWeeks: 6, outcome: "Review time cut from 3 days to 4 hours; 92% straight-through.", lastUsed: "2026-06-18", owner: "Priya Shah (UK)", timesReused: 7 },
