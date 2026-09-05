@@ -1,5 +1,13 @@
 # RevenueOS — Brief→POC-Plan Loop
 
+### ▶ Live demo: **https://revenueos-blond.vercel.app**
+
+_Runs on Vercel with synthetic data — no login, no setup. Click a brief in the
+queue, watch the agent draft an editable POC plan, accept/edit/reject it, and see
+the seam tick toward its SLA and fire a breach trigger on its own._
+
+---
+
 An operating system for a revenue handoff. When Sales wins a deal, the
 Sales→PreSales handoff (the "seam") is cleared by an AI agent, a person decides,
 the system learns from that decision, and the seam watches its own SLA health.
@@ -44,10 +52,19 @@ All data in this repo is synthetic.
 
 ## Status
 
-🟢 Working control surface with the agent wired in. Explainable retrieval and
-POC drafting run behind the UI (`/api/draft`); seam health, reuse and triggers
-are computed live. Persistent event store (Neon/Postgres) is the next step — see
-[`PLAN.md`](PLAN.md).
+🟢 Live on Vercel — [revenueos-blond.vercel.app](https://revenueos-blond.vercel.app).
+Working control surface with the agent wired in: explainable retrieval and POC
+drafting run behind the UI (`/api/draft`); seam health, reuse and triggers are
+computed live. The public demo drafts with a deterministic sample plan; set
+`ANTHROPIC_API_KEY` to draft with Claude. Persistent event store (Neon/Postgres)
+is the next step — see [`PLAN.md`](PLAN.md).
+
+## Deploy your own
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/anupsahoo/revenueos)
+
+Zero-config (Next.js). Optionally add `ANTHROPIC_API_KEY` (and
+`LLM_MODEL=claude-sonnet-5`) in project env vars to enable Claude drafting.
 
 ## Run
 
